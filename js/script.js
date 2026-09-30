@@ -174,15 +174,78 @@ function generatePokemon() {
 
     for (let i = 0; i < pokemonCards.length; i++) {
 
-        pokemonCards[i].innerHTML = `
-            <div>${generatedPokemon[i].name}</div>
+        const pokemon =
+            generatedPokemon[i];
 
-            <div class="pokemon-tier">
-                ${generatedPokemon[i].tier}
+        const spriteUrl =
+            getPokemonSpriteUrl(pokemon.name);
+
+        const tierClass =
+            "tier-" + pokemon.tier.toLowerCase();
+
+        pokemonCards[i].innerHTML = `
+            <div class="pokemon-sprite-container">
+                <img
+                    class="pokemon-sprite"
+                    src="${spriteUrl}"
+                    alt="${pokemon.name}"
+                >
+            </div>
+
+            <div class="pokemon-name">
+                ${pokemon.name}
+            </div>
+
+            <div class="pokemon-tier ${tierClass}">
+                ${pokemon.tier}
             </div>
         `;
 
     }
+
+}
+
+
+/*
+    =========================================
+    POKÉMON SPRITES
+    =========================================
+*/
+
+/*
+    Pokémon Showdown's Generation 5 sprite folder
+    uses lowercase file names.
+
+    Examples:
+        Dragonite       -> dragonite.png
+        Rotom-Wash      -> rotom-wash.png
+        Mr. Mime        -> mrmime.png
+        Farfetch'd      -> farfetchd.png
+*/
+
+function getPokemonSpriteSlug(name) {
+
+    return name
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[.'’]/g, "")
+        .replace(/\s+/g, "");
+
+}
+
+
+function getPokemonSpriteUrl(name) {
+
+    const spriteSlug =
+        getPokemonSpriteSlug(name);
+
+    return (
+        "https://play.pokemonshowdown.com/" +
+        "sprites/gen5/" +
+        spriteSlug +
+        ".png"
+    );
 
 }
 
