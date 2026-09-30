@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Pokémon Random Generator</title>
+
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="data/gen5.js" defer></script>
+    <script src="js/script.js" defer></script>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <h1>Pokémon Random Generator</h1>
+
+        <p class="description">
+            Generate six random Pokémon.
+        </p>
+
+        <div class="generator-settings">
+
+            <div class="setting">
+                <label for="pool-select">Pool</label>
+
+                <select id="pool-select">
+                    <option value="gen5">Generation 5</option>
+                    <option value="natdex" disabled>
+                        National Dex (Coming Later)
+                    </option>
+                </select>
+            </div>
+
+            <div class="setting">
+                <label for="tier-select">Maximum Tier</label>
+
+                <select id="tier-select">
+                    <option value="Uber">Uber</option>
+                    <option value="OU">OU</option>
+                    <option value="UU">UU</option>
+                    <option value="RU">RU</option>
+                    <option value="NU">NU</option>
+                    <option value="PU">PU</option>
+                    <option value="ZU">ZU</option>
+                </select>
+            </div>
+
+        </div>
+
+        <button id="generate-button">
+            Generate Pokémon
+        </button>
+
+        <div id="results">
+
+            <div class="pokemon-card">?</div>
+            <div class="pokemon-card">?</div>
+            <div class="pokemon-card">?</div>
+            <div class="pokemon-card">?</div>
+            <div class="pokemon-card">?</div>
+            <div class="pokemon-card">?</div>
+
+        </div>
+
+    </main>
+
+</body>
+
+</html>
