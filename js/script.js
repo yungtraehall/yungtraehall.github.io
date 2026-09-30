@@ -47,6 +47,30 @@ const standardTierOdds = {
 
 
 /*
+    ODDS MODIFIERS
+
+    These modify how strongly the generator favors
+    higher or lower competitive tiers.
+
+    =   Standard odds
+    +   Stronger Pokémon become more common
+    ++  Stronger Pokémon become much more common
+    -   Weaker Pokémon become more common
+    --  Weaker Pokémon become much more common
+
+    These do NOT change eligibility.
+*/
+
+const oddsStrengthFactors = {
+    "--": 0.65,
+    "-": 0.80,
+    "=": 1.00,
+    "+": 1.40,
+    "++": 1.80
+};
+
+
+/*
     Individual Pokémon modifiers.
 
     A Pokémon with very high usage within its tier
@@ -88,6 +112,9 @@ const poolSelect =
 const tierSelect =
     document.getElementById("tier-select");
 
+const oddsSelect =
+    document.getElementById("odds-select");
+
 const pokemonCards =
     document.querySelectorAll(".pokemon-card");
 
@@ -124,6 +151,9 @@ function generatePokemon() {
     const selectedTier =
         tierSelect.value;
 
+    const selectedOdds =
+        oddsSelect.value;
+
 
     /*
         Generate a six-Pokémon team using
@@ -131,7 +161,11 @@ function generatePokemon() {
     */
 
     const generatedPokemon =
-        generateTeam(pokemonPool, selectedTier);
+        generateTeam(
+            pokemonPool,
+            selectedTier,
+            selectedOdds
+        );
 
 
     /*
@@ -159,7 +193,11 @@ function generatePokemon() {
     =========================================
 */
 
-function generateTeam(pokemonPool, selectedTier) {
+function generateTeam(
+    pokemonPool,
+    selectedTier,
+    selectedOdds
+) {
 
     const selectedTierPosition =
         tierOrder.indexOf(selectedTier);
@@ -208,7 +246,8 @@ function generateTeam(pokemonPool, selectedTier) {
         const rolledTier =
             chooseTier(
                 availablePokemon,
-                selectedTier
+                selectedTier,
+                selectedOdds
             );
 
 
@@ -274,7 +313,11 @@ function generateTeam(pokemonPool, selectedTier) {
     =========================================
 */
 
-function chooseTier(availablePokemon, selectedTier) {
+function chooseTier(
+    availablePokemon,
+    selectedTier,
+    selectedOdds
+) {
 
     const selectedTierPosition =
         tierOrder.indexOf(selectedTier);
@@ -303,7 +346,8 @@ function chooseTier(availablePokemon, selectedTier) {
 
 
     /*
-        Choose a tier using our Standard odds.
+        Choose a tier using our Standard odds,
+        tilted by the user's odds modifier.
 
         weightedRandomChoice automatically
         rebalances the probabilities when some
@@ -313,7 +357,21 @@ function chooseTier(availablePokemon, selectedTier) {
     return weightedRandomChoice(
         allowedTiers,
         function (tier) {
-            return standardTierOdds[tier];
+
+            const tierPosition =
+                tierOrder.indexOf(tier);
+
+            const strengthFactor =
+                oddsStrengthFactors[selectedOdds];
+
+            return (
+                standardTierOdds[tier] *
+                Math.pow(
+                    strengthFactor,
+                    tierPosition
+                )
+            );
+
         }
     );
 
@@ -533,6 +591,9 @@ function simulateTeams(numberOfTeams = 10000) {
     const selectedTier =
         tierSelect.value;
 
+    const selectedOdds =
+        oddsSelect.value;
+
     const pokemonPool =
         datasets[selectedPool];
 
@@ -556,7 +617,8 @@ function simulateTeams(numberOfTeams = 10000) {
         const team =
             generateTeam(
                 pokemonPool,
-                selectedTier
+                selectedTier,
+                selectedOdds
             );
 
 
@@ -605,6 +667,12 @@ function simulateTeams(numberOfTeams = 10000) {
             };
 
         });
+
+
+    console.log(
+        "Odds modifier:",
+        selectedOdds
+    );
 
 
     console.table(results);
