@@ -594,6 +594,21 @@ async function playRevealSequence(
     revealOverlay.className =
         "reveal-overlay";
 
+    /*
+        OU and Uber get their own premium reveal effects.
+
+        These classes only change presentation. They do not
+        affect the already-generated Pokémon or any odds.
+    */
+
+    if (highestTier === "OU") {
+        revealOverlay.classList.add("reveal-ou");
+    }
+
+    if (highestTier === "Uber") {
+        revealOverlay.classList.add("reveal-uber");
+    }
+
     revealOverlay.style.setProperty(
         "--reveal-color",
         revealTierColors[highestTier]
