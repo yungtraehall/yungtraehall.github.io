@@ -627,27 +627,36 @@ body.reveal-active {
     background:
         radial-gradient(
             circle at center,
-            var(--reveal-color) 0%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 94%,
+                var(--reveal-color) 88%,
                 #050505
-            ) 16%,
+            ) 0%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 76%,
+                var(--reveal-color) 78%,
+                #040404
+            ) 14%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 58%,
                 #030303
-            ) 34%,
+            ) 30%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 48%,
+                var(--reveal-color) 34%,
                 #020202
-            ) 54%,
+            ) 48%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 20%,
+                var(--reveal-color) 16%,
                 #010101
-            ) 74%,
+            ) 66%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 5%,
+                #000000
+            ) 84%,
             #000000 100%
         );
 }
@@ -656,27 +665,39 @@ body.reveal-active {
     background:
         radial-gradient(
             circle,
-            #ffffff 0%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 84%,
-                white
-            ) 16%,
-            var(--reveal-color) 48%,
-            transparent 72%
+                var(--reveal-color) 42%,
+                #ffffff
+            ) 0%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 78%,
+                #111111
+            ) 22%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 58%,
+                #050505
+            ) 58%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 36%,
+                #020202
+            ) 100%
         );
 
     transform: scale(1.78);
 
     box-shadow:
-        0 0 32px var(--reveal-color),
-        0 0 82px var(--reveal-color),
-        0 0 150px
+        0 0 22px var(--reveal-color),
+        0 0 62px
             color-mix(
                 in srgb,
-                var(--reveal-color) 72%,
+                var(--reveal-color) 68%,
                 transparent
-            );
+            ),
+        inset 0 0 40px rgba(0, 0, 0, 0.22);
 }
 
 .reveal-overlay.rarity-revealed .reveal-ring-one {
@@ -717,35 +738,82 @@ body.reveal-active {
     background:
         radial-gradient(
             circle at center,
-            var(--reveal-color) 0%,
-            var(--reveal-color) 14%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 90%,
+                var(--reveal-color) 92%,
                 #050505
-            ) 28%,
+            ) 0%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 70%,
-                #030303
-            ) 44%,
+                var(--reveal-color) 84%,
+                #050505
+            ) 12%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 68%,
+                #040404
+            ) 26%,
             color-mix(
                 in srgb,
                 var(--reveal-color) 48%,
+                #030303
+            ) 42%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 28%,
                 #020202
-            ) 60%,
+            ) 58%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 25%,
+                var(--reveal-color) 14%,
                 #010101
-            ) 76%,
+            ) 74%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 9%,
+                var(--reveal-color) 5%,
                 #000000
-            ) 90%,
+            ) 88%,
             #000000 100%
         );
+}
+
+.reveal-overlay.pokemon-revealed .reveal-orb {
+    background:
+        radial-gradient(
+            circle,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 38%,
+                #ffffff
+            ) 0%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 72%,
+                #141414
+            ) 18%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 52%,
+                #060606
+            ) 56%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 34%,
+                #020202
+            ) 100%
+        );
+
+    transform: scale(1.78);
+
+    box-shadow:
+        0 0 20px var(--reveal-color),
+        0 0 52px
+            color-mix(
+                in srgb,
+                var(--reveal-color) 55%,
+                transparent
+            ),
+        inset 0 0 42px rgba(0, 0, 0, 0.26);
 }
 
 .reveal-overlay.pokemon-revealed .reveal-preview-sprite {
