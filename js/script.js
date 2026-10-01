@@ -127,6 +127,12 @@ const revealTierName =
 const revealPreviewSprite =
     document.getElementById("reveal-preview-sprite");
 
+const revealPokemonName =
+    document.getElementById("reveal-pokemon-name");
+
+const revealContinueButton =
+    document.getElementById("reveal-continue-button");
+
 
 /*
     Colors used by the dramatic reveal.
@@ -139,7 +145,7 @@ const revealTierColors = {
     "PU": "#2471a3",
     "NU": "#2e8b57",
     "RU": "#b7950b",
-    "UU": "#d35400",
+    "UU": "#ED9121",
     "OU": "#c0392b",
     "Uber": "#7d3c98"
 };
@@ -226,6 +232,11 @@ async function generatePokemon() {
     const previewPokemon =
         getPreviewPokemon(generatedPokemon);
 
+    const previewIndex =
+        generatedPokemon.findIndex(function (pokemon) {
+            return pokemon.id === previewPokemon.id;
+        });
+
 
     /*
         Build the result cards behind the overlay
@@ -242,7 +253,7 @@ async function generatePokemon() {
             previewPokemon
         );
 
-        revealPokemonCards();
+        revealPokemonCards(previewIndex);
 
     } finally {
 
@@ -313,16 +324,41 @@ function renderTeam(generatedPokemon) {
 }
 
 
-function revealPokemonCards() {
+function revealPokemonCards(previewIndex) {
+
+    /*
+        The featured Pokémon was already shown on the
+        reveal screen, so show its card immediately.
+    */
+
+    const featuredCard =
+        pokemonCards[previewIndex];
+
+    featuredCard.classList.remove("card-hidden");
+    featuredCard.classList.add("card-reveal");
+
+
+    /*
+        Then reveal only the remaining five Pokémon
+        with a short stagger.
+    */
+
+    let remainingIndex = 0;
 
     pokemonCards.forEach(function (card, index) {
+
+        if (index === previewIndex) {
+            return;
+        }
+
+        remainingIndex++;
 
         setTimeout(function () {
 
             card.classList.remove("card-hidden");
             card.classList.add("card-reveal");
 
-        }, index * 110);
+        }, remainingIndex * 110);
 
     });
 
@@ -380,6 +416,21 @@ function sleep(milliseconds) {
 
     return new Promise(function (resolve) {
         setTimeout(resolve, milliseconds);
+    });
+
+}
+
+
+function waitForContinue() {
+
+    return new Promise(function (resolve) {
+
+        revealContinueButton.addEventListener(
+            "click",
+            resolve,
+            { once: true }
+        );
+
     });
 
 }
@@ -529,6 +580,9 @@ async function playRevealSequence(
     revealPreviewSprite.alt =
         previewPokemon.name;
 
+    revealPokemonName.textContent =
+        previewPokemon.name;
+
     revealPreviewSprite.onerror = function () {
 
         this.onerror = null;
@@ -554,7 +608,9 @@ async function playRevealSequence(
 
         revealOverlay.classList.add(
             "active",
-            "rarity-revealed"
+            "rarity-revealed",
+            "pokemon-revealed",
+            "awaiting-continue"
         );
 
         revealOverlay.setAttribute(
@@ -562,11 +618,13 @@ async function playRevealSequence(
             "false"
         );
 
-        await sleep(350);
+        await waitForContinue();
 
         revealOverlay.classList.remove(
             "active",
-            "rarity-revealed"
+            "rarity-revealed",
+            "pokemon-revealed",
+            "awaiting-continue"
         );
 
         revealOverlay.setAttribute(
@@ -577,6 +635,7 @@ async function playRevealSequence(
         revealPreviewSprite.src = "";
         revealPreviewSprite.alt = "";
         revealPreviewSprite.onerror = null;
+        revealPokemonName.textContent = "";
 
         return;
 
@@ -650,8 +709,8 @@ async function playRevealSequence(
 
 
     /*
-        OU and Uber get a longer pause before the
-        final tone so the cadence feels like:
+        UU, OU, and Uber get a longer pause before
+        the final tone so the cadence feels like:
 
             1, 2... 3
 
@@ -660,6 +719,7 @@ async function playRevealSequence(
 
     const finalToneDelay =
         (
+            highestTier === "UU" ||
             highestTier === "OU" ||
             highestTier === "Uber"
         )
@@ -675,19 +735,43 @@ async function playRevealSequence(
 
 
     /*
-        Reveal only the color / highest tier first.
-        The Pokémon themselves are still hidden.
+        First reveal the tier color and a silhouette
+        of the featured Pokémon.
     */
 
     revealOverlay.classList.add(
         "rarity-revealed"
     );
 
-    await sleep(820);
+    await sleep(620);
 
 
     /*
-        White flash, then remove the overlay.
+        Then resolve the silhouette into the full GIF.
+    */
+
+    revealOverlay.classList.add(
+        "pokemon-revealed"
+    );
+
+    await sleep(360);
+
+
+    /*
+        Hold the featured pull on screen until the
+        user chooses to continue.
+    */
+
+    revealOverlay.classList.add(
+        "awaiting-continue"
+    );
+
+    await waitForContinue();
+
+
+    /*
+        White flash, then remove the overlay and
+        reveal the remaining five Pokémon.
     */
 
     revealOverlay.classList.add(
@@ -714,6 +798,9 @@ async function playRevealSequence(
     revealPreviewSprite.src = "";
     revealPreviewSprite.alt = "";
     revealPreviewSprite.onerror = null;
+
+    revealPokemonName.textContent = "";
+    revealContinueButton.blur();
 
     document.body.classList.remove(
         "reveal-active"
