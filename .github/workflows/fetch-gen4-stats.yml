@@ -1,0 +1,27 @@
+name: Fetch Gen 4 source stats
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fetch-gen4-stats.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch August 2016 Gen 4 usage files
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== GEN4OU START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2016-08/gen4ou-0.txt"
+          echo
+          echo "=== GEN4OU END ==="
+          echo "=== GEN4UBERS START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2016-08/gen4ubers-0.txt"
+          echo
+          echo "=== GEN4UBERS END ==="
