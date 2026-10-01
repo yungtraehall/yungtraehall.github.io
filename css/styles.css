@@ -350,7 +350,7 @@ body.reveal-active {
 .reveal-orb {
     position: absolute;
 
-    width: 34%;
+    width: 38%;
     aspect-ratio: 1;
     border-radius: 50%;
 
@@ -396,7 +396,7 @@ body.reveal-active {
     left: 50%;
     top: 44%;
 
-    width: clamp(112px, 27vw, 150px);
+    width: clamp(140px, 34vw, 190px);
     aspect-ratio: 1;
 
     border: 5px solid #101114;
@@ -663,7 +663,7 @@ body.reveal-active {
             transparent 72%
         );
 
-    transform: scale(1.65);
+    transform: scale(1.78);
 
     box-shadow:
         0 0 32px var(--reveal-color),
@@ -708,6 +708,25 @@ body.reveal-active {
         brightness(0)
         drop-shadow(0 0 12px rgba(255, 255, 255, 0.24))
         drop-shadow(0 0 48px var(--reveal-color));
+}
+
+.reveal-overlay.pokemon-revealed {
+    background:
+        radial-gradient(
+            circle at center,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 52%,
+                #050505
+            ) 0%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 28%,
+                #020202
+            ) 38%,
+            rgba(2, 2, 2, 0.985) 72%,
+            #000000 100%
+        );
 }
 
 .reveal-overlay.pokemon-revealed .reveal-preview-sprite {
