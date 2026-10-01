@@ -177,8 +177,11 @@ function generatePokemon() {
         const pokemon =
             generatedPokemon[i];
 
-        const spriteUrl =
-            getPokemonSpriteUrl(pokemon.name);
+        const animatedSpriteUrl =
+            getAnimatedPokemonSpriteUrl(pokemon.name);
+
+        const staticSpriteUrl =
+            getStaticPokemonSpriteUrl(pokemon.name);
 
         const tierClass =
             "tier-" + pokemon.tier.toLowerCase();
@@ -187,8 +190,9 @@ function generatePokemon() {
             <div class="pokemon-sprite-container">
                 <img
                     class="pokemon-sprite"
-                    src="${spriteUrl}"
+                    src="${animatedSpriteUrl}"
                     alt="${pokemon.name}"
+                    onerror="this.onerror=null; this.src='${staticSpriteUrl}'"
                 >
             </div>
 
@@ -235,7 +239,22 @@ function getPokemonSpriteSlug(name) {
 }
 
 
-function getPokemonSpriteUrl(name) {
+function getAnimatedPokemonSpriteUrl(name) {
+
+    const spriteSlug =
+        getPokemonSpriteSlug(name);
+
+    return (
+        "https://play.pokemonshowdown.com/" +
+        "sprites/xyani/" +
+        spriteSlug +
+        ".gif"
+    );
+
+}
+
+
+function getStaticPokemonSpriteUrl(name) {
 
     const spriteSlug =
         getPokemonSpriteSlug(name);
