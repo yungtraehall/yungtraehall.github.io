@@ -246,3 +246,342 @@ h1 {
     }
 
 }
+
+
+
+/* =========================================
+   Dramatic rarity reveal
+   ========================================= */
+
+body.reveal-active {
+    overflow: hidden;
+}
+
+#generate-button:disabled {
+    cursor: wait;
+    opacity: 0.72;
+    transform: none;
+}
+
+.reveal-overlay {
+    --reveal-color: #666666;
+
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+        radial-gradient(
+            circle at center,
+            rgba(25, 25, 25, 0.98) 0%,
+            rgba(8, 8, 8, 0.995) 48%,
+            #000000 100%
+        );
+
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    transition:
+        opacity 0.24s ease,
+        visibility 0.24s ease;
+}
+
+.reveal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.reveal-overlay.leaving {
+    opacity: 0;
+}
+
+.reveal-stage {
+    position: relative;
+
+    width: min(70vw, 440px);
+    aspect-ratio: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.reveal-orb {
+    position: absolute;
+
+    width: 34%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.055);
+
+    box-shadow:
+        0 0 30px rgba(255, 255, 255, 0.08),
+        inset 0 0 22px rgba(255, 255, 255, 0.06);
+
+    transform: scale(0.78);
+    transition:
+        transform 0.5s cubic-bezier(0.18, 0.8, 0.2, 1),
+        background 0.45s ease,
+        box-shadow 0.45s ease;
+}
+
+.reveal-ring {
+    position: absolute;
+
+    width: 38%;
+    aspect-ratio: 1;
+
+    border: 2px solid rgba(255, 255, 255, 0.14);
+    border-radius: 50%;
+
+    opacity: 0;
+    transform: scale(0.65);
+}
+
+.reveal-ring-two {
+    width: 55%;
+}
+
+.reveal-tier-name {
+    position: relative;
+    z-index: 3;
+
+    margin-top: 62%;
+
+    font-size: clamp(34px, 7vw, 74px);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+
+    color: white;
+
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+
+    text-shadow:
+        0 0 16px var(--reveal-color),
+        0 0 38px var(--reveal-color);
+
+    transition:
+        opacity 0.35s ease,
+        transform 0.45s cubic-bezier(0.18, 0.8, 0.2, 1);
+}
+
+
+/* Each tone creates a restrained white pulse. */
+
+.reveal-overlay.tone-pulse-1 .reveal-ring-one,
+.reveal-overlay.tone-pulse-2 .reveal-ring-one,
+.reveal-overlay.tone-pulse-3 .reveal-ring-one {
+    animation: reveal-tone-ring 0.52s ease-out;
+}
+
+.reveal-overlay.tone-pulse-1 .reveal-orb,
+.reveal-overlay.tone-pulse-2 .reveal-orb,
+.reveal-overlay.tone-pulse-3 .reveal-orb {
+    animation: reveal-tone-orb 0.42s ease-out;
+}
+
+
+/* The color arrives only after the third tone. */
+
+.reveal-overlay.rarity-revealed {
+    background:
+        radial-gradient(
+            circle at center,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 44%,
+                #111111
+            ) 0%,
+            rgba(7, 7, 7, 0.985) 48%,
+            #000000 100%
+        );
+}
+
+.reveal-overlay.rarity-revealed .reveal-orb {
+    background:
+        radial-gradient(
+            circle,
+            #ffffff 0%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 84%,
+                white
+            ) 16%,
+            var(--reveal-color) 48%,
+            transparent 72%
+        );
+
+    transform: scale(1.65);
+
+    box-shadow:
+        0 0 32px var(--reveal-color),
+        0 0 82px var(--reveal-color),
+        0 0 150px
+            color-mix(
+                in srgb,
+                var(--reveal-color) 72%,
+                transparent
+            );
+}
+
+.reveal-overlay.rarity-revealed .reveal-ring-one {
+    opacity: 0.7;
+    border-color: var(--reveal-color);
+    animation: reveal-color-ring 0.9s ease-out infinite;
+}
+
+.reveal-overlay.rarity-revealed .reveal-ring-two {
+    opacity: 0.42;
+    border-color: var(--reveal-color);
+    animation:
+        reveal-color-ring 1.25s ease-out 0.16s infinite;
+}
+
+.reveal-overlay.rarity-revealed .reveal-tier-name {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+
+/* Final white flash */
+
+.reveal-flash {
+    position: absolute;
+    inset: 0;
+
+    background: white;
+
+    opacity: 0;
+    pointer-events: none;
+}
+
+.reveal-overlay.final-flash .reveal-flash {
+    animation: reveal-final-flash 0.28s ease-out;
+}
+
+
+/* Result-card reveal */
+
+.pokemon-card.card-hidden {
+    opacity: 0;
+    transform: translateY(24px) scale(0.93);
+}
+
+.pokemon-card.card-reveal {
+    animation:
+        pokemon-card-reveal 0.46s
+        cubic-bezier(0.18, 0.85, 0.25, 1)
+        both;
+}
+
+
+@keyframes reveal-tone-ring {
+
+    0% {
+        opacity: 0.55;
+        transform: scale(0.62);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.35);
+    }
+
+}
+
+@keyframes reveal-tone-orb {
+
+    0% {
+        transform: scale(0.78);
+        background: rgba(255, 255, 255, 0.055);
+    }
+
+    40% {
+        transform: scale(0.92);
+        background: rgba(255, 255, 255, 0.14);
+    }
+
+    100% {
+        transform: scale(0.78);
+        background: rgba(255, 255, 255, 0.055);
+    }
+
+}
+
+@keyframes reveal-color-ring {
+
+    0% {
+        opacity: 0.7;
+        transform: scale(0.65);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.65);
+    }
+
+}
+
+@keyframes reveal-final-flash {
+
+    0% {
+        opacity: 0;
+    }
+
+    38% {
+        opacity: 0.95;
+    }
+
+    100% {
+        opacity: 0;
+    }
+
+}
+
+@keyframes pokemon-card-reveal {
+
+    0% {
+        opacity: 0;
+        transform: translateY(24px) scale(0.93);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(-3px) scale(1.015);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+}
+
+
+/* Accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .reveal-overlay,
+    .reveal-orb,
+    .reveal-ring,
+    .reveal-tier-name,
+    .pokemon-card {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .pokemon-card.card-reveal {
+        opacity: 1;
+        transform: none;
+    }
+
+}
