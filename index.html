@@ -97,6 +97,10 @@
             <div class="reveal-ring reveal-ring-two"></div>
             <div class="reveal-orb"></div>
 
+            <div class="reveal-pokeball" aria-hidden="true">
+                <div class="pokeball-center"></div>
+            </div>
+
             <div class="reveal-flares" aria-hidden="true">
                 <div class="reveal-flare flare-a"></div>
                 <div class="reveal-flare flare-b"></div>
@@ -112,10 +116,23 @@
             >
 
             <div
+                id="reveal-pokemon-name"
+                class="reveal-pokemon-name"
+            ></div>
+
+            <div
                 id="reveal-tier-name"
                 class="reveal-tier-name"
                 aria-live="polite"
             ></div>
+
+            <button
+                id="reveal-continue-button"
+                class="reveal-continue-button"
+                type="button"
+            >
+                Continue
+            </button>
         </div>
 
         <div class="reveal-flash"></div>
