@@ -277,8 +277,8 @@ body.reveal-active {
     background:
         radial-gradient(
             circle at center,
-            rgba(25, 25, 25, 0.98) 0%,
-            rgba(8, 8, 8, 0.995) 48%,
+            rgba(8, 8, 8, 0.998) 0%,
+            rgba(1, 1, 1, 0.999) 45%,
             #000000 100%
         );
 
@@ -374,6 +374,44 @@ body.reveal-active {
 }
 
 
+/*
+    Preview of the strongest Pokémon in the roll.
+
+    It stays completely hidden during the three-tone
+    buildup and appears only with the rarity color.
+*/
+
+.reveal-preview-sprite {
+    position: absolute;
+    z-index: 2;
+
+    left: 50%;
+    top: 46%;
+
+    width: min(230px, 48vw);
+    max-height: min(230px, 48vw);
+    height: auto;
+
+    object-fit: contain;
+    image-rendering: pixelated;
+
+    opacity: 0;
+
+    transform:
+        translate(-50%, -50%)
+        scale(0.72);
+
+    filter:
+        drop-shadow(0 0 16px rgba(255, 255, 255, 0.14))
+        drop-shadow(0 0 34px var(--reveal-color));
+
+    transition:
+        opacity 0.42s ease,
+        transform 0.5s cubic-bezier(0.18, 0.8, 0.2, 1),
+        filter 0.45s ease;
+}
+
+
 /* Each tone creates a restrained white pulse. */
 
 .reveal-overlay.tone-pulse-1 .reveal-ring-one,
@@ -397,10 +435,10 @@ body.reveal-active {
             circle at center,
             color-mix(
                 in srgb,
-                var(--reveal-color) 44%,
-                #111111
+                var(--reveal-color) 30%,
+                #030303
             ) 0%,
-            rgba(7, 7, 7, 0.985) 48%,
+            rgba(1, 1, 1, 0.998) 45%,
             #000000 100%
         );
 }
@@ -448,6 +486,18 @@ body.reveal-active {
 .reveal-overlay.rarity-revealed .reveal-tier-name {
     opacity: 1;
     transform: translateY(0) scale(1);
+}
+
+.reveal-overlay.rarity-revealed .reveal-preview-sprite {
+    opacity: 1;
+
+    transform:
+        translate(-50%, -50%)
+        scale(1);
+
+    filter:
+        drop-shadow(0 0 18px rgba(255, 255, 255, 0.22))
+        drop-shadow(0 0 46px var(--reveal-color));
 }
 
 
@@ -574,6 +624,7 @@ body.reveal-active {
     .reveal-orb,
     .reveal-ring,
     .reveal-tier-name,
+    .reveal-preview-sprite,
     .pokemon-card {
         animation: none !important;
         transition: none !important;
