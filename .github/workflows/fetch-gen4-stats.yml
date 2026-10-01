@@ -1,4 +1,4 @@
-name: Fetch Gen 4 source stats
+name: Validate Gen 4 integration
 
 on:
   push:
@@ -10,18 +10,112 @@ permissions:
   contents: read
 
 jobs:
-  fetch:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch August 2016 Gen 4 usage files
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check data/gen4.js
+          node --check data/gen5.js
+          node --check js/script.js
+
+      - name: Validate Generation 4 dataset
         shell: bash
         run: |
-          set -euo pipefail
-          echo "=== GEN4OU START ==="
-          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2016-08/gen4ou-0.txt"
-          echo
-          echo "=== GEN4OU END ==="
-          echo "=== GEN4UBERS START ==="
-          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2016-08/gen4ubers-0.txt"
-          echo
-          echo "=== GEN4UBERS END ==="
+          node <<'NODE'
+          const fs = require("fs");
+          const vm = require("vm");
+
+          const source =
+            fs.readFileSync("data/gen4.js", "utf8") +
+            "\nglobalThis.__GEN4 = GEN4_POKEMON;" +
+            "\nglobalThis.__META = GEN4_DATASET_META;";
+
+          const context = {};
+          vm.createContext(context);
+          vm.runInContext(source, context);
+
+          const data = context.__GEN4;
+          const meta = context.__META;
+
+          const expectedCounts = {
+            Uber: 23,
+            OU: 59,
+            UU: 50,
+            RU: 2,
+            NU: 35,
+            PU: 29,
+            ZU: 78
+          };
+
+          if (data.length !== 276) {
+            throw new Error("Expected 276 Gen 4 entries, got " + data.length);
+          }
+
+          const ids = new Set(data.map(p => p.id));
+          if (ids.size !== data.length) {
+            throw new Error("Duplicate Gen 4 IDs detected");
+          }
+
+          const counts = {};
+          for (const pokemon of data) {
+            counts[pokemon.tier] = (counts[pokemon.tier] || 0) + 1;
+
+            if (!pokemon.fullyEvolved) {
+              throw new Error("Non-fully-evolved flag found: " + pokemon.name);
+            }
+
+            const expectedSource =
+              pokemon.tier === "Uber"
+                ? "gen4ubers"
+                : "gen4ou";
+
+            if (pokemon.usageSource !== expectedSource) {
+              throw new Error(
+                pokemon.name +
+                " has wrong usage source: " +
+                pokemon.usageSource
+              );
+            }
+          }
+
+          for (const [tier, expected] of Object.entries(expectedCounts)) {
+            if (counts[tier] !== expected) {
+              throw new Error(
+                tier + " count expected " +
+                expected + ", got " +
+                counts[tier]
+              );
+            }
+          }
+
+          const recorded =
+            data.filter(p => p.usage.recorded).length;
+
+          if (recorded !== 264) {
+            throw new Error(
+              "Expected 264 recorded usage rows, got " +
+              recorded
+            );
+          }
+
+          if (meta.battles.gen4ou !== 18554) {
+            throw new Error("Unexpected OU battle count");
+          }
+
+          if (meta.battles.gen4ubers !== 644) {
+            throw new Error("Unexpected Ubers battle count");
+          }
+
+          console.log("Gen 4 validation passed.");
+          console.log("Entries:", data.length);
+          console.log("Tier counts:", JSON.stringify(counts));
+          console.log("Usage recorded:", recorded);
+          console.log("Usage missing:", data.length - recorded);
+          console.log(
+            "Battle counts:",
+            JSON.stringify(meta.battles)
+          );
+          NODE
