@@ -124,6 +124,9 @@ const revealOverlay =
 const revealTierName =
     document.getElementById("reveal-tier-name");
 
+const revealPreviewSprite =
+    document.getElementById("reveal-preview-sprite");
+
 
 /*
     Colors used by the dramatic reveal.
@@ -220,6 +223,9 @@ async function generatePokemon() {
     const highestTier =
         getHighestTier(generatedPokemon);
 
+    const previewPokemon =
+        getPreviewPokemon(generatedPokemon);
+
 
     /*
         Build the result cards behind the overlay
@@ -231,7 +237,10 @@ async function generatePokemon() {
 
     try {
 
-        await playRevealSequence(highestTier);
+        await playRevealSequence(
+            highestTier,
+            previewPokemon
+        );
 
         revealPokemonCards();
 
@@ -343,6 +352,26 @@ function getHighestTier(team) {
         return highestTier;
 
     }, "ZU");
+
+}
+
+
+/*
+    Pick the first Pokémon belonging to the
+    strongest tier in the generated six.
+
+    This choice is deterministic and does not
+    perform another random roll.
+*/
+
+function getPreviewPokemon(team) {
+
+    const highestTier =
+        getHighestTier(team);
+
+    return team.find(function (pokemon) {
+        return pokemon.tier === highestTier;
+    });
 
 }
 
@@ -465,12 +494,47 @@ function pulseRevealStage(pulseNumber) {
 }
 
 
-async function playRevealSequence(highestTier) {
+async function playRevealSequence(
+    highestTier,
+    previewPokemon
+) {
 
     const prefersReducedMotion =
         window.matchMedia(
             "(prefers-reduced-motion: reduce)"
         ).matches;
+
+
+    /*
+        Prepare the strongest Pokémon's animated
+        Showdown sprite before the reveal begins.
+
+        If its GIF fails, automatically fall back
+        to the Generation 5 PNG.
+    */
+
+    const animatedPreviewUrl =
+        getAnimatedPokemonSpriteUrl(
+            previewPokemon.name
+        );
+
+    const staticPreviewUrl =
+        getStaticPokemonSpriteUrl(
+            previewPokemon.name
+        );
+
+    revealPreviewSprite.src =
+        animatedPreviewUrl;
+
+    revealPreviewSprite.alt =
+        previewPokemon.name;
+
+    revealPreviewSprite.onerror = function () {
+
+        this.onerror = null;
+        this.src = staticPreviewUrl;
+
+    };
 
 
     /*
@@ -509,6 +573,10 @@ async function playRevealSequence(highestTier) {
             "aria-hidden",
             "true"
         );
+
+        revealPreviewSprite.src = "";
+        revealPreviewSprite.alt = "";
+        revealPreviewSprite.onerror = null;
 
         return;
 
@@ -609,6 +677,10 @@ async function playRevealSequence(highestTier) {
         "aria-hidden",
         "true"
     );
+
+    revealPreviewSprite.src = "";
+    revealPreviewSprite.alt = "";
+    revealPreviewSprite.onerror = null;
 
     document.body.classList.remove(
         "reveal-active"
