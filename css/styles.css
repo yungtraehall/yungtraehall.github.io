@@ -501,6 +501,297 @@ body.reveal-active {
 }
 
 
+
+/* =========================================
+   Premium OU / Uber reveal effects
+   ========================================= */
+
+.reveal-flares {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+
+    overflow: visible;
+    pointer-events: none;
+}
+
+.reveal-flare {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+/*
+    OU: two fast red-white flare sweeps.
+
+    This should feel noticeably premium without
+    competing with the rarer Uber animation.
+*/
+
+.reveal-ou.rarity-revealed .flare-a,
+.reveal-ou.rarity-revealed .flare-b {
+    width: min(310px, 62vw);
+    height: 18px;
+
+    border-radius: 999px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.98) 16%,
+            #ff8068 36%,
+            #c0392b 50%,
+            #ff8068 64%,
+            rgba(255, 255, 255, 0.98) 84%,
+            transparent 100%
+        );
+
+    box-shadow:
+        0 0 14px rgba(255, 255, 255, 0.75),
+        0 0 34px #ff5d45,
+        0 0 64px rgba(192, 57, 43, 0.7);
+}
+
+.reveal-ou.rarity-revealed .flare-a {
+    animation: ou-flare-a 0.95s ease-out both;
+}
+
+.reveal-ou.rarity-revealed .flare-b {
+    animation: ou-flare-b 0.95s ease-out 0.09s both;
+}
+
+
+/*
+    Uber: a larger purple-white starburst plus two
+    outward-moving "firework" sparks.
+
+    This is intentionally more dramatic than OU.
+*/
+
+.reveal-uber.rarity-revealed .flare-a,
+.reveal-uber.rarity-revealed .flare-b {
+    width: 18px;
+    height: 18px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            #ffffff 0%,
+            #ead8ff 24%,
+            #b96cff 48%,
+            #7d3c98 68%,
+            transparent 100%
+        );
+
+    box-shadow:
+        0 0 14px #ffffff,
+        0 0 36px #c58cff,
+        0 0 72px rgba(125, 60, 152, 0.9);
+}
+
+.reveal-uber.rarity-revealed .flare-a {
+    animation: uber-firework-a 1.15s ease-out both;
+}
+
+.reveal-uber.rarity-revealed .flare-b {
+    animation: uber-firework-b 1.2s ease-out 0.06s both;
+}
+
+.reveal-uber.rarity-revealed .flare-c,
+.reveal-uber.rarity-revealed .flare-d {
+    width: min(350px, 72vw);
+    height: 22px;
+
+    border-radius: 999px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.98) 17%,
+            #e4c7ff 36%,
+            #8e44ad 50%,
+            #e4c7ff 64%,
+            rgba(255, 255, 255, 0.98) 83%,
+            transparent 100%
+        );
+
+    box-shadow:
+        0 0 16px #ffffff,
+        0 0 38px #c58cff,
+        0 0 78px rgba(125, 60, 152, 0.78);
+}
+
+.reveal-uber.rarity-revealed .flare-c {
+    animation: uber-starburst-horizontal 1.05s ease-out both;
+}
+
+.reveal-uber.rarity-revealed .flare-d {
+    animation: uber-starburst-vertical 1.05s ease-out 0.05s both;
+}
+
+
+/* OU animation */
+
+@keyframes ou-flare-a {
+
+    0% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            rotate(25deg)
+            scaleX(0.35);
+    }
+
+    18% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            rotate(25deg)
+            scaleX(1.32);
+    }
+
+}
+
+@keyframes ou-flare-b {
+
+    0% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            rotate(-25deg)
+            scaleX(0.35);
+    }
+
+    18% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            rotate(-25deg)
+            scaleX(1.32);
+    }
+
+}
+
+
+/* Uber animations */
+
+@keyframes uber-starburst-horizontal {
+
+    0% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            rotate(0deg)
+            scaleX(0.2);
+    }
+
+    16% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            rotate(0deg)
+            scaleX(1.45);
+    }
+
+}
+
+@keyframes uber-starburst-vertical {
+
+    0% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            rotate(90deg)
+            scaleX(0.2);
+    }
+
+    16% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            rotate(90deg)
+            scaleX(1.45);
+    }
+
+}
+
+@keyframes uber-firework-a {
+
+    0% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            scale(0.35);
+    }
+
+    16% {
+        opacity: 1;
+    }
+
+    70% {
+        opacity: 0.9;
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translate(-185px, -155px)
+            scale(2.15);
+    }
+
+}
+
+@keyframes uber-firework-b {
+
+    0% {
+        opacity: 0;
+        transform:
+            translate(-50%, -50%)
+            scale(0.35);
+    }
+
+    16% {
+        opacity: 1;
+    }
+
+    70% {
+        opacity: 0.9;
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translate(145px, -180px)
+            scale(2.25);
+    }
+
+}
+
+
 /* Final white flash */
 
 .reveal-flash {
@@ -625,6 +916,7 @@ body.reveal-active {
     .reveal-ring,
     .reveal-tier-name,
     .reveal-preview-sprite,
+    .reveal-flare,
     .pokemon-card {
         animation: none !important;
         transition: none !important;
