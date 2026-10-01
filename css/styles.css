@@ -609,7 +609,7 @@ body.reveal-active {
 }
 
 
-/* Each tone creates a restrained white pulse and Poké Ball shake. */
+/* Each tone is represented visually only by the Poké Ball shake. */
 
 .reveal-overlay.tone-pulse-1 .reveal-pokeball,
 .reveal-overlay.tone-pulse-2 .reveal-pokeball {
@@ -620,18 +620,6 @@ body.reveal-active {
     animation: pokeball-shake-strong 0.58s ease-in-out;
 }
 
-.reveal-overlay.tone-pulse-1 .reveal-ring-one,
-.reveal-overlay.tone-pulse-2 .reveal-ring-one,
-.reveal-overlay.tone-pulse-3 .reveal-ring-one {
-    animation: reveal-tone-ring 0.52s ease-out;
-}
-
-.reveal-overlay.tone-pulse-1 .reveal-orb,
-.reveal-overlay.tone-pulse-2 .reveal-orb,
-.reveal-overlay.tone-pulse-3 .reveal-orb {
-    animation: reveal-tone-orb 0.42s ease-out;
-}
-
 
 /* The color arrives only after the third tone. */
 
@@ -639,12 +627,27 @@ body.reveal-active {
     background:
         radial-gradient(
             circle at center,
+            var(--reveal-color) 0%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 30%,
+                var(--reveal-color) 94%,
+                #050505
+            ) 16%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 76%,
                 #030303
-            ) 0%,
-            rgba(1, 1, 1, 0.998) 45%,
+            ) 34%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 48%,
+                #020202
+            ) 54%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 20%,
+                #010101
+            ) 74%,
             #000000 100%
         );
 }
@@ -714,17 +717,33 @@ body.reveal-active {
     background:
         radial-gradient(
             circle at center,
+            var(--reveal-color) 0%,
+            var(--reveal-color) 14%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 52%,
+                var(--reveal-color) 90%,
                 #050505
-            ) 0%,
+            ) 28%,
             color-mix(
                 in srgb,
-                var(--reveal-color) 28%,
+                var(--reveal-color) 70%,
+                #030303
+            ) 44%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 48%,
                 #020202
-            ) 38%,
-            rgba(2, 2, 2, 0.985) 72%,
+            ) 60%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 25%,
+                #010101
+            ) 76%,
+            color-mix(
+                in srgb,
+                var(--reveal-color) 9%,
+                #000000
+            ) 90%,
             #000000 100%
         );
 }
@@ -1140,39 +1159,6 @@ body.reveal-active {
             translate(calc(-50% - 8px), -50%)
             rotate(-7deg)
             scale(1.02);
-    }
-
-}
-
-@keyframes reveal-tone-ring {
-
-    0% {
-        opacity: 0.55;
-        transform: scale(0.62);
-    }
-
-    100% {
-        opacity: 0;
-        transform: scale(1.35);
-    }
-
-}
-
-@keyframes reveal-tone-orb {
-
-    0% {
-        transform: scale(0.78);
-        background: rgba(255, 255, 255, 0.055);
-    }
-
-    40% {
-        transform: scale(0.92);
-        background: rgba(255, 255, 255, 0.14);
-    }
-
-    100% {
-        transform: scale(0.78);
-        background: rgba(255, 255, 255, 0.055);
     }
 
 }
