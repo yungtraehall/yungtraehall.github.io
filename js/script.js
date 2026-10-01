@@ -93,6 +93,7 @@ const MAX_USAGE_MODIFIER = 1.15;
 */
 
 const datasets = {
+    gen4: GEN4_POKEMON,
     gen5: GEN5_POKEMON
 };
 
@@ -283,7 +284,10 @@ function renderTeam(generatedPokemon) {
             getAnimatedPokemonSpriteUrl(pokemon.name);
 
         const staticSpriteUrl =
-            getStaticPokemonSpriteUrl(pokemon.name);
+            getStaticPokemonSpriteUrl(
+                pokemon.name,
+                pokemon.generation
+            );
 
         const tierClass =
             "tier-" + pokemon.tier.toLowerCase();
@@ -561,7 +565,7 @@ async function playRevealSequence(
         Showdown sprite before the reveal begins.
 
         If its GIF fails, automatically fall back
-        to the Generation 5 PNG.
+        to the matching generation's PNG.
     */
 
     const animatedPreviewUrl =
@@ -571,7 +575,8 @@ async function playRevealSequence(
 
     const staticPreviewUrl =
         getStaticPokemonSpriteUrl(
-            previewPokemon.name
+            previewPokemon.name,
+            previewPokemon.generation
         );
 
     revealPreviewSprite.src =
@@ -816,8 +821,8 @@ async function playRevealSequence(
 */
 
 /*
-    Pokémon Showdown's Generation 5 sprite folder
-    uses lowercase file names.
+    Pokémon Showdown's historical sprite folders
+    use lowercase file names.
 
     Examples:
         Dragonite       -> dragonite.png
@@ -853,14 +858,19 @@ function getAnimatedPokemonSpriteUrl(name) {
 }
 
 
-function getStaticPokemonSpriteUrl(name) {
+function getStaticPokemonSpriteUrl(
+    name,
+    generation
+) {
 
     const spriteSlug =
         getPokemonSpriteSlug(name);
 
     return (
         "https://play.pokemonshowdown.com/" +
-        "sprites/gen5/" +
+        "sprites/gen" +
+        generation +
+        "/" +
         spriteSlug +
         ".png"
     );
