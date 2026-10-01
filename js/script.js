@@ -118,6 +118,33 @@ const oddsSelect =
 const pokemonCards =
     document.querySelectorAll(".pokemon-card");
 
+const revealOverlay =
+    document.getElementById("reveal-overlay");
+
+const revealTierName =
+    document.getElementById("reveal-tier-name");
+
+
+/*
+    Colors used by the dramatic reveal.
+
+    These intentionally match the tier badges.
+*/
+
+const revealTierColors = {
+    "ZU": "#666666",
+    "PU": "#2471a3",
+    "NU": "#2e8b57",
+    "RU": "#b7950b",
+    "UU": "#d35400",
+    "OU": "#c0392b",
+    "Uber": "#7d3c98"
+};
+
+
+let revealInProgress = false;
+let audioContext = null;
+
 
 /*
     Before the generator starts, calculate the
@@ -140,7 +167,21 @@ generateButton.addEventListener("click", generatePokemon);
     =========================================
 */
 
-function generatePokemon() {
+async function generatePokemon() {
+
+    /*
+        Do not allow a second roll to start while
+        the current reveal animation is playing.
+    */
+
+    if (revealInProgress) {
+        return;
+    }
+
+    revealInProgress = true;
+    generateButton.disabled = true;
+    generateButton.textContent = "Opening...";
+
 
     const selectedPool =
         poolSelect.value;
@@ -156,8 +197,10 @@ function generatePokemon() {
 
 
     /*
-        Generate a six-Pokémon team using
-        the Hybrid probability engine.
+        Generate the six Pokémon immediately.
+
+        The animation does NOT affect the odds.
+        It only hides the already-generated result.
     */
 
     const generatedPokemon =
@@ -169,8 +212,47 @@ function generatePokemon() {
 
 
     /*
-        Display the six results.
+        Find the strongest tier in the six.
+
+        That tier decides the reveal color.
     */
+
+    const highestTier =
+        getHighestTier(generatedPokemon);
+
+
+    /*
+        Build the result cards behind the overlay
+        so the sprites can begin loading early.
+    */
+
+    renderTeam(generatedPokemon);
+
+
+    try {
+
+        await playRevealSequence(highestTier);
+
+        revealPokemonCards();
+
+    } finally {
+
+        revealInProgress = false;
+        generateButton.disabled = false;
+        generateButton.textContent = "Generate Pokémon";
+
+    }
+
+}
+
+
+/*
+    =========================================
+    RESULT DISPLAY
+    =========================================
+*/
+
+function renderTeam(generatedPokemon) {
 
     for (let i = 0; i < pokemonCards.length; i++) {
 
@@ -185,6 +267,18 @@ function generatePokemon() {
 
         const tierClass =
             "tier-" + pokemon.tier.toLowerCase();
+
+
+        /*
+            Start every new card hidden.
+
+            After the color reveal finishes, the six
+            cards are shown one after another.
+        */
+
+        pokemonCards[i].classList.remove("card-reveal");
+        pokemonCards[i].classList.add("card-hidden");
+
 
         pokemonCards[i].innerHTML = `
             <div class="pokemon-sprite-container">
@@ -206,6 +300,319 @@ function generatePokemon() {
         `;
 
     }
+
+}
+
+
+function revealPokemonCards() {
+
+    pokemonCards.forEach(function (card, index) {
+
+        setTimeout(function () {
+
+            card.classList.remove("card-hidden");
+            card.classList.add("card-reveal");
+
+        }, index * 110);
+
+    });
+
+}
+
+
+/*
+    =========================================
+    DRAMATIC REVEAL
+    =========================================
+*/
+
+function getHighestTier(team) {
+
+    return team.reduce(function (highestTier, pokemon) {
+
+        const currentPosition =
+            tierOrder.indexOf(pokemon.tier);
+
+        const highestPosition =
+            tierOrder.indexOf(highestTier);
+
+        if (currentPosition > highestPosition) {
+            return pokemon.tier;
+        }
+
+        return highestTier;
+
+    }, "ZU");
+
+}
+
+
+function sleep(milliseconds) {
+
+    return new Promise(function (resolve) {
+        setTimeout(resolve, milliseconds);
+    });
+
+}
+
+
+function prepareAudio() {
+
+    /*
+        Audio must begin from a user click in modern browsers.
+        Creating/resuming the AudioContext here keeps it inside
+        the Generate button interaction.
+    */
+
+    const AudioContextClass =
+        window.AudioContext ||
+        window.webkitAudioContext;
+
+    if (!AudioContextClass) {
+        return;
+    }
+
+    if (!audioContext) {
+        audioContext = new AudioContextClass();
+    }
+
+    if (audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+
+}
+
+
+function playRevealTone(frequency) {
+
+    if (!audioContext) {
+        return;
+    }
+
+    const now =
+        audioContext.currentTime;
+
+    const oscillator =
+        audioContext.createOscillator();
+
+    const harmonic =
+        audioContext.createOscillator();
+
+    const gain =
+        audioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(
+        frequency,
+        now
+    );
+
+    harmonic.type = "triangle";
+    harmonic.frequency.setValueAtTime(
+        frequency * 2,
+        now
+    );
+
+
+    /*
+        Quick attack, then a short decay.
+        The volume is deliberately modest.
+    */
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(
+        0.12,
+        now + 0.025
+    );
+    gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + 0.28
+    );
+
+
+    oscillator.connect(gain);
+    harmonic.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start(now);
+    harmonic.start(now);
+
+    oscillator.stop(now + 0.30);
+    harmonic.stop(now + 0.30);
+
+}
+
+
+function pulseRevealStage(pulseNumber) {
+
+    revealOverlay.classList.remove(
+        "tone-pulse-1",
+        "tone-pulse-2",
+        "tone-pulse-3"
+    );
+
+    /*
+        Force the browser to register the class removal
+        so the same CSS animation can restart.
+    */
+
+    void revealOverlay.offsetWidth;
+
+    revealOverlay.classList.add(
+        "tone-pulse-" + pulseNumber
+    );
+
+}
+
+
+async function playRevealSequence(highestTier) {
+
+    const prefersReducedMotion =
+        window.matchMedia(
+            "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+
+    /*
+        Reduced-motion users get a short color cue
+        without the full buildup.
+    */
+
+    if (prefersReducedMotion) {
+
+        revealOverlay.style.setProperty(
+            "--reveal-color",
+            revealTierColors[highestTier]
+        );
+
+        revealTierName.textContent =
+            highestTier;
+
+        revealOverlay.classList.add(
+            "active",
+            "rarity-revealed"
+        );
+
+        revealOverlay.setAttribute(
+            "aria-hidden",
+            "false"
+        );
+
+        await sleep(350);
+
+        revealOverlay.classList.remove(
+            "active",
+            "rarity-revealed"
+        );
+
+        revealOverlay.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+        return;
+
+    }
+
+
+    prepareAudio();
+
+
+    /*
+        Reset the overlay so every click starts from
+        a completely clean animation state.
+    */
+
+    revealOverlay.className =
+        "reveal-overlay";
+
+    revealOverlay.style.setProperty(
+        "--reveal-color",
+        revealTierColors[highestTier]
+    );
+
+    revealTierName.textContent =
+        highestTier;
+
+    revealOverlay.setAttribute(
+        "aria-hidden",
+        "false"
+    );
+
+    document.body.classList.add(
+        "reveal-active"
+    );
+
+    revealOverlay.classList.add(
+        "active"
+    );
+
+
+    /*
+        Three spaced tones create the buildup.
+
+        The actual rarity color remains hidden until
+        AFTER the third tone.
+    */
+
+    await sleep(260);
+
+    playRevealTone(185);
+    pulseRevealStage(1);
+
+    await sleep(650);
+
+    playRevealTone(235);
+    pulseRevealStage(2);
+
+    await sleep(650);
+
+    playRevealTone(300);
+    pulseRevealStage(3);
+
+    await sleep(360);
+
+
+    /*
+        Reveal only the color / highest tier first.
+        The Pokémon themselves are still hidden.
+    */
+
+    revealOverlay.classList.add(
+        "rarity-revealed"
+    );
+
+    await sleep(820);
+
+
+    /*
+        White flash, then remove the overlay.
+    */
+
+    revealOverlay.classList.add(
+        "final-flash"
+    );
+
+    await sleep(260);
+
+    revealOverlay.classList.add(
+        "leaving"
+    );
+
+    await sleep(360);
+
+
+    revealOverlay.className =
+        "reveal-overlay";
+
+    revealOverlay.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+
+    document.body.classList.remove(
+        "reveal-active"
+    );
 
 }
 
