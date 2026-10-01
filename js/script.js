@@ -648,7 +648,25 @@ async function playRevealSequence(
     playRevealTone(235);
     pulseRevealStage(2);
 
-    await sleep(650);
+
+    /*
+        OU and Uber get a longer pause before the
+        final tone so the cadence feels like:
+
+            1, 2... 3
+
+        Lower tiers keep the quicker standard cadence.
+    */
+
+    const finalToneDelay =
+        (
+            highestTier === "OU" ||
+            highestTier === "Uber"
+        )
+            ? 1100
+            : 650;
+
+    await sleep(finalToneDelay);
 
     playRevealTone(300);
     pulseRevealStage(3);
