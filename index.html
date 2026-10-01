@@ -80,6 +80,33 @@
 
     </main>
 
+    <!--
+        Full-screen reveal sequence.
+
+        The generator secretly creates the six Pokémon first.
+        This overlay then reveals only the color of the
+        strongest tier before the actual Pokémon are shown.
+    -->
+    <div
+        id="reveal-overlay"
+        class="reveal-overlay"
+        aria-hidden="true"
+    >
+        <div class="reveal-stage">
+            <div class="reveal-ring reveal-ring-one"></div>
+            <div class="reveal-ring reveal-ring-two"></div>
+            <div class="reveal-orb"></div>
+
+            <div
+                id="reveal-tier-name"
+                class="reveal-tier-name"
+                aria-live="polite"
+            ></div>
+        </div>
+
+        <div class="reveal-flash"></div>
+    </div>
+
 </body>
 
 </html>
