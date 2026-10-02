@@ -1,0 +1,27 @@
+name: Fetch Gen 1 source stats
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fetch-gen1-stats.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch June 2020 Gen 1 usage files
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== GEN1OU START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2020-06/gen1ou-0.txt.gz" | gzip -dc
+          echo
+          echo "=== GEN1OU END ==="
+          echo "=== GEN1UBERS START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2020-06/gen1ubers-0.txt.gz" | gzip -dc
+          echo
+          echo "=== GEN1UBERS END ==="
