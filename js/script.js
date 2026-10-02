@@ -93,6 +93,7 @@ const MAX_USAGE_MODIFIER = 1.15;
 */
 
 const datasets = {
+    gen2: GEN2_POKEMON,
     gen3: GEN3_POKEMON,
     gen4: GEN4_POKEMON,
     gen5: GEN5_POKEMON
