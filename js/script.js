@@ -93,6 +93,7 @@ const MAX_USAGE_MODIFIER = 1.15;
 */
 
 const datasets = {
+    gen1: GEN1_POKEMON,
     gen2: GEN2_POKEMON,
     gen3: GEN3_POKEMON,
     gen4: GEN4_POKEMON,
@@ -171,6 +172,99 @@ Object.values(datasets).forEach(function (dataset) {
 
 
 generateButton.addEventListener("click", generatePokemon);
+
+poolSelect.addEventListener(
+    "change",
+    updateTierAvailability
+);
+
+updateTierAvailability();
+
+
+/*
+    Some historical generations do not have enough
+    Pokémon in every low-tier ceiling to build a
+    six-Pokémon team.
+
+    Disable any Maximum Tier option that would leave
+    fewer than six distinct eligible Pokémon. If the
+    user switches pools while one of those options is
+    selected, move to the nearest stronger valid ceiling.
+*/
+
+function updateTierAvailability() {
+
+    const pokemonPool =
+        datasets[poolSelect.value] || [];
+
+    const selectedPosition =
+        tierOrder.indexOf(
+            tierSelect.value
+        );
+
+    for (const option of tierSelect.options) {
+
+        const optionPosition =
+            tierOrder.indexOf(
+                option.value
+            );
+
+        const eligibleCount =
+            pokemonPool.filter(function (pokemon) {
+
+                const pokemonPosition =
+                    tierOrder.indexOf(
+                        pokemon.tier
+                    );
+
+                return (
+                    pokemonPosition <=
+                    optionPosition
+                );
+
+            }).length;
+
+        option.disabled =
+            eligibleCount < 6;
+
+    }
+
+    if (!tierSelect.selectedOptions[0].disabled) {
+        return;
+    }
+
+    for (
+        let position = Math.max(selectedPosition, 0);
+        position < tierOrder.length;
+        position++
+    ) {
+
+        const replacementTier =
+            tierOrder[position];
+
+        const replacementOption =
+            Array.from(
+                tierSelect.options
+            ).find(function (option) {
+                return (
+                    option.value ===
+                    replacementTier
+                );
+            });
+
+        if (
+            replacementOption &&
+            !replacementOption.disabled
+        ) {
+            tierSelect.value =
+                replacementTier;
+
+            return;
+        }
+
+    }
+
+}
 
 
 /*
