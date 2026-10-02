@@ -1049,6 +1049,7 @@ function generateTeam(
         const rolledTier =
             chooseTier(
                 availablePokemon,
+                pokemonPool,
                 selectedTier,
                 selectedOdds
             );
@@ -1118,6 +1119,7 @@ function generateTeam(
 
 function chooseTier(
     availablePokemon,
+    pokemonPool,
     selectedTier,
     selectedOdds
 ) {
@@ -1125,56 +1127,153 @@ function chooseTier(
     const selectedTierPosition =
         tierOrder.indexOf(selectedTier);
 
+    const ceilingTiers =
+        tierOrder.slice(
+            0,
+            selectedTierPosition + 1
+        );
 
     /*
-        Only tiers equal to or below the ceiling
-        are allowed.
+        Historical generations do not always have
+        every modern generator bucket.
+
+        Generation 1, for example, has no structural
+        ZU, PU, or RU bucket after fully-evolved
+        filtering.
+
+        Instead of deleting those probability weights
+        and accidentally making OU/Uber much more
+        common, fold a structurally missing tier into
+        the nearest tier that actually exists in that
+        generation.
+
+        This keeps the broad Standard odds meaningful
+        across generations. It does NOT affect tiers
+        that merely become empty during one six-Pokémon
+        roll; those continue to rebalance as before.
     */
 
-    const allowedTiers =
-        tierOrder
-            .slice(0, selectedTierPosition + 1)
-            .filter(function (tier) {
+    const structuralTiers =
+        ceilingTiers.filter(function (tier) {
 
-                /*
-                    Also make sure this tier still
-                    has at least one Pokémon available.
-                */
-
-                return availablePokemon.some(function (pokemon) {
-                    return pokemon.tier === tier;
-                });
-
+            return pokemonPool.some(function (pokemon) {
+                return pokemon.tier === tier;
             });
+
+        });
+
+    const availableTiers =
+        structuralTiers.filter(function (tier) {
+
+            return availablePokemon.some(function (pokemon) {
+                return pokemon.tier === tier;
+            });
+
+        });
+
+    const strengthFactor =
+        oddsStrengthFactors[selectedOdds];
+
+    const tierWeights = {};
+
+    structuralTiers.forEach(function (tier) {
+        tierWeights[tier] = 0;
+    });
+
+    ceilingTiers.forEach(function (tier) {
+
+        const tierPosition =
+            tierOrder.indexOf(tier);
+
+        const weight =
+            standardTierOdds[tier] *
+            Math.pow(
+                strengthFactor,
+                tierPosition
+            );
+
+        let targetTier = tier;
+
+        if (!structuralTiers.includes(tier)) {
+
+            targetTier = null;
+
+            /*
+                Prefer the nearest weaker existing tier.
+                If none exists, use the nearest stronger
+                existing tier.
+            */
+
+            for (
+                let position =
+                    tierPosition - 1;
+                position >= 0;
+                position--
+            ) {
+
+                const candidate =
+                    tierOrder[position];
+
+                if (
+                    structuralTiers.includes(
+                        candidate
+                    )
+                ) {
+                    targetTier = candidate;
+                    break;
+                }
+
+            }
+
+            if (!targetTier) {
+
+                for (
+                    let position =
+                        tierPosition + 1;
+                    position <=
+                        selectedTierPosition;
+                    position++
+                ) {
+
+                    const candidate =
+                        tierOrder[position];
+
+                    if (
+                        structuralTiers.includes(
+                            candidate
+                        )
+                    ) {
+                        targetTier =
+                            candidate;
+                        break;
+                    }
+
+                }
+
+            }
+
+        }
+
+        if (targetTier) {
+            tierWeights[targetTier] +=
+                weight;
+        }
+
+    });
 
 
     /*
-        Choose a tier using our Standard odds,
-        tilted by the user's odds modifier.
+        If a real tier has been exhausted during the
+        current six-Pokémon roll, omit it here.
 
-        weightedRandomChoice automatically
-        rebalances the probabilities when some
-        tiers are unavailable.
+        weightedRandomChoice then rebalances only the
+        tiers that still have Pokémon available.
     */
 
     return weightedRandomChoice(
-        allowedTiers,
+        availableTiers,
         function (tier) {
-
-            const tierPosition =
-                tierOrder.indexOf(tier);
-
-            const strengthFactor =
-                oddsStrengthFactors[selectedOdds];
-
-            return (
-                standardTierOdds[tier] *
-                Math.pow(
-                    strengthFactor,
-                    tierPosition
-                )
-            );
-
+            return tierWeights[tier];
         }
     );
 
