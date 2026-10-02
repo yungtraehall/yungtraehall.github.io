@@ -1,0 +1,39 @@
+name: Validate sprite fallbacks
+
+on:
+  push:
+    paths:
+      - ".github/workflows/validate-sprites.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: node --check js/script.js
+
+      - name: Verify representative Showdown sprite URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          urls=(
+            "https://play.pokemonshowdown.com/sprites/ani/charizard-megay.gif"
+            "https://play.pokemonshowdown.com/sprites/ani/mewtwo-megax.gif"
+            "https://play.pokemonshowdown.com/sprites/ani/hooh.gif"
+            "https://play.pokemonshowdown.com/sprites/ani/rotom-wash.gif"
+            "https://play.pokemonshowdown.com/sprites/ani/porygonz.gif"
+          )
+
+          for url in "${urls[@]}"; do
+            echo "Checking $url"
+            curl --fail --silent --show-error --location               --output /dev/null "$url"
+          done
+
+          echo "Representative sprite URLs passed."
