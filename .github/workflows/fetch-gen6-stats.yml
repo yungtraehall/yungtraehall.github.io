@@ -1,4 +1,4 @@
-name: Probe Gen 6 source stats
+name: Fetch Gen 6 source stats
 
 on:
   push:
@@ -10,34 +10,20 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  fetch:
     runs-on: ubuntu-latest
     steps:
-      - name: Check 2016-2017 Gen 6 months
+      - name: Fetch August 2017 Gen 6 usage files
         shell: bash
         run: |
           set -euo pipefail
 
-          for month in 2016-03 2016-06 2016-08 2016-10 2016-12 2017-02 2017-04 2017-06 2017-08 2017-10 2017-12; do
-            echo "=== $month ==="
+          echo "=== GEN6OU START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2017-08/gen6ou-0.txt"
+          echo
+          echo "=== GEN6OU END ==="
 
-            for format in gen6ou gen6ubers; do
-              url="https://www.smogon.com/stats/$month/$format-0.txt"
-
-              if curl --fail --silent --show-error --location "$url" -o "/tmp/$format.txt"; then
-                battles="$(grep -m1 'Total battles:' "/tmp/$format.txt" | sed 's/.*Total battles: //')"
-                echo "$format $battles"
-                continue
-              fi
-
-              gz="$url.gz"
-
-              if curl --fail --silent --show-error --location "$gz" -o "/tmp/$format.txt.gz"; then
-                gzip -dc "/tmp/$format.txt.gz" > "/tmp/$format.txt"
-                battles="$(grep -m1 'Total battles:' "/tmp/$format.txt" | sed 's/.*Total battles: //')"
-                echo "$format $battles"
-              else
-                echo "$format MISSING"
-              fi
-            done
-          done
+          echo "=== GEN6UBERS START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2017-08/gen6ubers-0.txt"
+          echo
+          echo "=== GEN6UBERS END ==="
