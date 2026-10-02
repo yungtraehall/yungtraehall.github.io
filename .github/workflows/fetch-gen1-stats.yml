@@ -31,461 +31,171 @@ jobs:
           const fs = require("fs");
           const vm = require("vm");
 
-          const source =
-            fs.readFileSync("data/gen1.js", "utf8") +
-            "\nglobalThis.__GEN1 = GEN1_POKEMON;" +
-            "\nglobalThis.__META = GEN1_DATASET_META;";
+          const src =
+            fs.readFileSync("data/gen1.js","utf8") +
+            "\nglobalThis.data=GEN1_POKEMON;" +
+            "\nglobalThis.meta=GEN1_DATASET_META;";
 
-          const context = {};
-          vm.createContext(context);
-          vm.runInContext(source, context);
+          const ctx = {};
+          vm.createContext(ctx);
+          vm.runInContext(src,ctx);
 
-          const data = context.__GEN1;
-          const meta = context.__META;
+          const data=ctx.data;
+          const meta=ctx.meta;
+          const tierOrder=["ZU","PU","NU","RU","UU","OU","Uber"];
+          const odds={ZU:30,PU:22,NU:18,RU:14,UU:10,OU:5.5,Uber:0.5};
+          const expected={Uber:2,OU:11,UU:17,RU:0,NU:20,PU:0,ZU:0};
 
-          const tierOrder =
-            ["ZU","PU","NU","RU","UU","OU","Uber"];
+          if(data.length!==50) throw new Error("Expected 50 entries");
 
-          const expectedCounts = {
-            Uber: 2,
-            OU: 11,
-            UU: 17,
-            RU: 0,
-            NU: 20,
-            PU: 0,
-            ZU: 0
-          };
+          const ids=new Set(data.map(p=>p.id));
+          if(ids.size!==data.length) throw new Error("Duplicate IDs");
 
-          const standardTierOdds = {
-            ZU: 30,
-            PU: 22,
-            NU: 18,
-            RU: 14,
-            UU: 10,
-            OU: 5.5,
-            Uber: 0.5
-          };
-
-          if (data.length !== 50) {
-            throw new Error(
-              "Expected 50 Gen 1 entries, got " +
-              data.length
-            );
+          const counts={};
+          for(const p of data){
+            counts[p.tier]=(counts[p.tier]||0)+1;
+            if(!p.fullyEvolved) throw new Error("NFE flag: "+p.name);
+            const source=p.tier==="Uber"?"gen1ubers":"gen1ou";
+            if(p.usageSource!==source) throw new Error("Wrong usage source: "+p.name);
           }
 
-          const ids = new Set(data.map(p => p.id));
-
-          if (ids.size !== data.length) {
-            throw new Error(
-              "Duplicate Gen 1 IDs detected"
-            );
+          for(const [t,n] of Object.entries(expected)){
+            if((counts[t]||0)!==n) throw new Error("Bad count "+t);
           }
 
-          const counts = {};
+          if(data.filter(p=>p.usage.recorded).length!==50) throw new Error("Usage mismatch");
+          if(meta.battles.gen1ou!==14193 || meta.battles.gen1ubers!==1924) throw new Error("Battle totals mismatch");
 
-          for (const pokemon of data) {
-            counts[pokemon.tier] =
-              (counts[pokemon.tier] || 0) + 1;
-
-            if (!pokemon.fullyEvolved) {
-              throw new Error(
-                "Non-fully-evolved flag found: " +
-                pokemon.name
-              );
-            }
-
-            const expectedSource =
-              pokemon.tier === "Uber"
-                ? "gen1ubers"
-                : "gen1ou";
-
-            if (
-              pokemon.usageSource !==
-              expectedSource
-            ) {
-              throw new Error(
-                pokemon.name +
-                " has wrong usage source: " +
-                pokemon.usageSource
-              );
+          for(const tier of tierOrder){
+            const xs=data.filter(p=>p.tier===tier);
+            xs.forEach(p=>p.usageModifier=1);
+            const rec=xs.filter(p=>p.usage.recorded&&typeof p.usage.usagePct==="number");
+            if(rec.length<2) continue;
+            for(const p of rec){
+              const higher=rec.filter(q=>q.usage.usagePct>p.usage.usagePct).length;
+              const equal=rec.filter(q=>q.usage.usagePct===p.usage.usagePct).length;
+              p.usageModifier=.85+((higher+(equal-1)/2)/(rec.length-1))*.30;
             }
           }
 
-          for (const [tier, expected] of
-               Object.entries(expectedCounts)) {
-            if ((counts[tier] || 0) !== expected) {
-              throw new Error(
-                tier + " count expected " +
-                expected + ", got " +
-                (counts[tier] || 0)
-              );
+          let seed=0x12345678;
+          function random(){
+            seed=(Math.imul(1664525,seed)+1013904223)>>>0;
+            return seed/4294967296;
+          }
+
+          function choose(items,getWeight){
+            let total=0;
+            for(const x of items) total+=getWeight(x);
+            let n=random()*total;
+            for(const x of items){
+              n-=getWeight(x);
+              if(n<=0) return x;
             }
+            return items[items.length-1];
           }
 
-          const recorded =
-            data.filter(
-              p => p.usage.recorded
-            ).length;
+          function chooseTier(available,pool,maxTier){
+            const max=tierOrder.indexOf(maxTier);
+            const ceiling=tierOrder.slice(0,max+1);
+            const structural=ceiling.filter(t=>pool.some(p=>p.tier===t));
+            const availableTiers=structural.filter(t=>available.some(p=>p.tier===t));
+            const weights=Object.fromEntries(structural.map(t=>[t,0]));
 
-          if (recorded !== 50) {
-            throw new Error(
-              "Expected all 50 usage rows " +
-              "to match, got " + recorded
-            );
-          }
+            for(const tier of ceiling){
+              const pos=tierOrder.indexOf(tier);
+              let target=tier;
 
-          if (meta.battles.gen1ou !== 14193) {
-            throw new Error(
-              "Unexpected OU battle count"
-            );
-          }
+              if(!structural.includes(tier)){
+                target=null;
 
-          if (
-            meta.battles.gen1ubers !== 1924
-          ) {
-            throw new Error(
-              "Unexpected Ubers battle count"
-            );
-          }
+                for(let i=pos-1;i>=0;i--){
+                  if(structural.includes(tierOrder[i])){
+                    target=tierOrder[i];
+                    break;
+                  }
+                }
 
-          for (const tier of tierOrder) {
-            const inTier =
-              data.filter(
-                p => p.tier === tier
-              );
-
-            for (const p of inTier) {
-              p.usageModifier = 1.00;
-            }
-
-            const recordedTier =
-              inTier.filter(
-                p =>
-                  p.usage &&
-                  p.usage.recorded &&
-                  typeof
-                    p.usage.usagePct ===
-                    "number"
-              );
-
-            if (recordedTier.length < 2) {
-              continue;
-            }
-
-            for (const p of recordedTier) {
-              const usage =
-                p.usage.usagePct;
-
-              const higher =
-                recordedTier.filter(
-                  q =>
-                    q.usage.usagePct >
-                    usage
-                ).length;
-
-              const equal =
-                recordedTier.filter(
-                  q =>
-                    q.usage.usagePct ===
-                    usage
-                ).length;
-
-              const position =
-                higher +
-                ((equal - 1) / 2);
-
-              const percentile =
-                position /
-                (recordedTier.length - 1);
-
-              p.usageModifier =
-                0.85 +
-                percentile * 0.30;
-            }
-          }
-
-          let seed = 0x12345678;
-
-          function random() {
-            seed =
-              (
-                Math.imul(
-                  1664525,
-                  seed
-                ) +
-                1013904223
-              ) >>> 0;
-
-            return seed / 4294967296;
-          }
-
-          function weightedChoice(
-            items,
-            getWeight
-          ) {
-            let total = 0;
-
-            for (const item of items) {
-              total += getWeight(item);
-            }
-
-            let n = random() * total;
-
-            for (const item of items) {
-              n -= getWeight(item);
-
-              if (n <= 0) {
-                return item;
+                if(!target){
+                  for(let i=pos+1;i<=max;i++){
+                    if(structural.includes(tierOrder[i])){
+                      target=tierOrder[i];
+                      break;
+                    }
+                  }
+                }
               }
+
+              if(target) weights[target]+=odds[tier];
             }
 
-            return items[items.length - 1];
+            return choose(availableTiers,t=>weights[t]);
           }
 
-          function generateTeam(
-            maxTier = "Uber"
-          ) {
-            const maxPosition =
-              tierOrder.indexOf(maxTier);
+          function team(maxTier="Uber"){
+            const max=tierOrder.indexOf(maxTier);
+            const pool=data.filter(p=>tierOrder.indexOf(p.tier)<=max);
+            if(pool.length<6) throw new Error("Not enough eligible for "+maxTier);
 
-            const available =
-              data
-                .filter(
-                  p =>
-                    tierOrder.indexOf(
-                      p.tier
-                    ) <=
-                    maxPosition
-                )
-                .slice();
+            const available=pool.slice();
+            const out=[];
 
-            if (available.length < 6) {
-              throw new Error(
-                "Not enough eligible Pokémon for " +
-                maxTier
-              );
+            for(let i=0;i<6;i++){
+              const tier=chooseTier(available,pool,maxTier);
+              const candidates=available.filter(p=>p.tier===tier);
+              const picked=choose(candidates,p=>p.usageModifier);
+              out.push(picked);
+              available.splice(available.findIndex(p=>p.id===picked.id),1);
             }
 
-            const team = [];
-
-            for (let i = 0; i < 6; i++) {
-              const allowedTiers =
-                tierOrder
-                  .slice(
-                    0,
-                    maxPosition + 1
-                  )
-                  .filter(
-                    tier =>
-                      available.some(
-                        p =>
-                          p.tier ===
-                          tier
-                      )
-                  );
-
-              const rolledTier =
-                weightedChoice(
-                  allowedTiers,
-                  tier =>
-                    standardTierOdds[
-                      tier
-                    ]
-                );
-
-              const candidates =
-                available.filter(
-                  p =>
-                    p.tier ===
-                    rolledTier
-                );
-
-              const selected =
-                weightedChoice(
-                  candidates,
-                  p =>
-                    p.usageModifier
-                );
-
-              team.push(selected);
-
-              const index =
-                available.findIndex(
-                  p =>
-                    p.id ===
-                    selected.id
-                );
-
-              available.splice(index, 1);
-            }
-
-            return team;
+            return out;
           }
 
-          const slotCounts =
-            Object.fromEntries(
-              tierOrder.map(
-                t => [t, 0]
-              )
-            );
+          const slotCounts=Object.fromEntries(tierOrder.map(t=>[t,0]));
+          let duplicateTeams=0;
+          let uberTeams=0;
+          const N=100000;
 
-          let duplicateTeams = 0;
-          let teamsWithUber = 0;
-          const simulations = 100000;
-
-          for (
-            let i = 0;
-            i < simulations;
-            i++
-          ) {
-            const team =
-              generateTeam();
-
-            if (
-              new Set(
-                team.map(
-                  p => p.id
-                )
-              ).size !== 6
-            ) {
-              duplicateTeams++;
-            }
-
-            if (
-              team.some(
-                p =>
-                  p.tier ===
-                  "Uber"
-              )
-            ) {
-              teamsWithUber++;
-            }
-
-            for (const p of team) {
-              slotCounts[p.tier]++;
-            }
+          for(let i=0;i<N;i++){
+            const x=team();
+            if(new Set(x.map(p=>p.id)).size!==6) duplicateTeams++;
+            if(x.some(p=>p.tier==="Uber")) uberTeams++;
+            for(const p of x) slotCounts[p.tier]++;
           }
 
-          if (duplicateTeams !== 0) {
-            throw new Error(
-              "Duplicate Pokémon detected"
-            );
-          }
+          if(duplicateTeams) throw new Error("Duplicate teams: "+duplicateTeams);
 
-          const ceilingChecks = {};
+          const ceilings={};
+          for(const t of tierOrder){
+            const max=tierOrder.indexOf(t);
+            const eligible=data.filter(p=>tierOrder.indexOf(p.tier)<=max);
 
-          for (
-            const maxTier of tierOrder
-          ) {
-            const maxPosition =
-              tierOrder.indexOf(maxTier);
-
-            const eligible =
-              data.filter(
-                p =>
-                  tierOrder.indexOf(
-                    p.tier
-                  ) <=
-                  maxPosition
-              );
-
-            if (eligible.length < 6) {
-              ceilingChecks[maxTier] =
-                "disabled";
-
+            if(eligible.length<6){
+              ceilings[t]="disabled";
               continue;
             }
 
-            const team =
-              generateTeam(maxTier);
-
-            ceilingChecks[maxTier] =
-              team.every(
-                p =>
-                  tierOrder.indexOf(
-                    p.tier
-                  ) <=
-                  maxPosition
-              );
-
-            if (
-              !ceilingChecks[
-                maxTier
-              ]
-            ) {
-              throw new Error(
-                "Tier ceiling failed " +
-                "for " + maxTier
-              );
-            }
+            ceilings[t]=team(t).every(p=>tierOrder.indexOf(p.tier)<=max);
+            if(!ceilings[t]) throw new Error("Ceiling failed "+t);
           }
 
-          const slotPercent = {};
-
-          for (
-            const tier of tierOrder
-          ) {
-            slotPercent[tier] =
-              Number(
-                (
-                  100 *
-                  slotCounts[tier] /
-                  (simulations * 6)
-                ).toFixed(3)
-              );
-          }
-
-          console.log(
-            "Gen 1 validation passed."
+          const pct=Object.fromEntries(
+            tierOrder.map(t=>[
+              t,
+              +(100*slotCounts[t]/(N*6)).toFixed(3)
+            ])
           );
 
-          console.log(
-            "Entries:",
-            data.length
-          );
+          if(Math.abs(pct.Uber-0.5)>0.08) throw new Error("Uber rate drifted: "+pct.Uber);
+          if(Math.abs(pct.OU-5.5)>0.15) throw new Error("OU rate drifted: "+pct.OU);
 
-          console.log(
-            "Tier counts:",
-            JSON.stringify(counts)
-          );
-
-          console.log(
-            "Usage recorded:",
-            recorded
-          );
-
-          console.log(
-            "Usage missing:",
-            data.length - recorded
-          );
-
-          console.log(
-            "Battle counts:",
-            JSON.stringify(
-              meta.battles
-            )
-          );
-
-          console.log(
-            "100k slot rates:",
-            JSON.stringify(
-              slotPercent
-            )
-          );
-
-          console.log(
-            "Teams with Uber:",
-            (
-              100 *
-              teamsWithUber /
-              simulations
-            ).toFixed(3) + "%"
-          );
-
-          console.log(
-            "Ceilings:",
-            JSON.stringify(
-              ceilingChecks
-            )
-          );
+          console.log("Gen 1 validation passed.");
+          console.log("Entries:",data.length);
+          console.log("Tier counts:",JSON.stringify(counts));
+          console.log("Usage recorded:",data.filter(p=>p.usage.recorded).length);
+          console.log("Usage missing:",data.filter(p=>!p.usage.recorded).length);
+          console.log("Battle counts:",JSON.stringify(meta.battles));
+          console.log("100k slot rates:",JSON.stringify(pct));
+          console.log("Teams with Uber:",(100*uberTeams/N).toFixed(3)+"%");
+          console.log("Ceilings:",JSON.stringify(ceilings));
           NODE
