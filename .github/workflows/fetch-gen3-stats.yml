@@ -1,0 +1,27 @@
+name: Fetch Gen 3 source stats
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fetch-gen3-stats.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch requested Gen 3 usage files
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== GEN3OU START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2016-08/gen3ou-0.txt"
+          echo
+          echo "=== GEN3OU END ==="
+          echo "=== GEN3UBERS START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2016-12/gen3ubers-0.txt"
+          echo
+          echo "=== GEN3UBERS END ==="
