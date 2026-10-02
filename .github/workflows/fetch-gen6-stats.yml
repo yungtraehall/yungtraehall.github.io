@@ -1,0 +1,27 @@
+name: Fetch Gen 6 source stats
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fetch-gen6-stats.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch December 2017 Gen 6 usage files
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== GEN6OU START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2017-12/gen6ou-0.txt.gz" | gzip -dc
+          echo
+          echo "=== GEN6OU END ==="
+          echo "=== GEN6UBERS START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2017-12/gen6ubers-0.txt.gz" | gzip -dc
+          echo
+          echo "=== GEN6UBERS END ==="
