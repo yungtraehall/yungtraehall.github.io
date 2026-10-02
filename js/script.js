@@ -835,10 +835,26 @@ async function playRevealSequence(
 
 function getPokemonSpriteSlug(name) {
 
-    return name
-        .normalize("NFKD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
+    const normalizedName =
+        name
+            .normalize("NFKD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
+
+    /*
+        Pokémon Showdown uses "hooh" rather than
+        "ho-oh" for Ho-Oh's sprite filename.
+
+        Keep other hyphens because alternate forms
+        such as Rotom-Wash and Deoxys-Attack use
+        them in their sprite filenames.
+    */
+
+    if (normalizedName === "ho-oh") {
+        return "hooh";
+    }
+
+    return normalizedName
         .replace(/[.'’]/g, "")
         .replace(/\s+/g, "");
 
