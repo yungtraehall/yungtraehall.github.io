@@ -1,0 +1,27 @@
+name: Fetch Gen 2 source stats
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fetch-gen2-stats.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch July 2020 Gen 2 usage files
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== GEN2OU START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2020-07/gen2ou-0.txt"
+          echo
+          echo "=== GEN2OU END ==="
+          echo "=== GEN2UBERS START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2020-07/gen2ubers-0.txt"
+          echo
+          echo "=== GEN2UBERS END ==="
