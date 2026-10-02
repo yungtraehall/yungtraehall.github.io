@@ -1,4 +1,4 @@
-name: Fetch Gen 2 source stats
+name: Validate Gen 2 integration
 
 on:
   push:
@@ -10,18 +10,494 @@ permissions:
   contents: read
 
 jobs:
-  fetch:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch July 2020 Gen 2 usage files
+      - uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check data/gen2.js
+          node --check data/gen3.js
+          node --check data/gen4.js
+          node --check data/gen5.js
+          node --check js/script.js
+
+      - name: Validate Generation 2 dataset and odds
         shell: bash
         run: |
-          set -euo pipefail
-          echo "=== GEN2OU START ==="
-          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2020-07/gen2ou-0.txt"
-          echo
-          echo "=== GEN2OU END ==="
-          echo "=== GEN2UBERS START ==="
-          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2020-07/gen2ubers-0.txt"
-          echo
-          echo "=== GEN2UBERS END ==="
+          node <<'NODE'
+          const fs = require("fs");
+          const vm = require("vm");
+
+          const source =
+            fs.readFileSync("data/gen2.js", "utf8") +
+            "\nglobalThis.__GEN2 = GEN2_POKEMON;" +
+            "\nglobalThis.__META = GEN2_DATASET_META;";
+
+          const context = {};
+          vm.createContext(context);
+          vm.runInContext(source, context);
+
+          const data = context.__GEN2;
+          const meta = context.__META;
+
+          const tierOrder =
+            ["ZU","PU","NU","RU","UU","OU","Uber"];
+
+          const expectedCounts = {
+            Uber: 5,
+            OU: 47,
+            UU: 33,
+            RU: 3,
+            NU: 22,
+            PU: 18,
+            ZU: 10
+          };
+
+          const standardTierOdds = {
+            ZU: 30,
+            PU: 22,
+            NU: 18,
+            RU: 14,
+            UU: 10,
+            OU: 5.5,
+            Uber: 0.5
+          };
+
+          if (data.length !== 138) {
+            throw new Error(
+              "Expected 138 Gen 2 entries, got " +
+              data.length
+            );
+          }
+
+          const ids = new Set(data.map(p => p.id));
+
+          if (ids.size !== data.length) {
+            throw new Error(
+              "Duplicate Gen 2 IDs detected"
+            );
+          }
+
+          const counts = {};
+
+          for (const pokemon of data) {
+            counts[pokemon.tier] =
+              (counts[pokemon.tier] || 0) + 1;
+
+            if (!pokemon.fullyEvolved) {
+              throw new Error(
+                "Non-fully-evolved flag found: " +
+                pokemon.name
+              );
+            }
+
+            const expectedSource =
+              pokemon.tier === "Uber"
+                ? "gen2ubers"
+                : "gen2ou";
+
+            if (
+              pokemon.usageSource !==
+              expectedSource
+            ) {
+              throw new Error(
+                pokemon.name +
+                " has wrong usage source: " +
+                pokemon.usageSource
+              );
+            }
+          }
+
+          for (const [tier, expected] of
+               Object.entries(expectedCounts)) {
+            if (counts[tier] !== expected) {
+              throw new Error(
+                tier + " count expected " +
+                expected + ", got " +
+                counts[tier]
+              );
+            }
+          }
+
+          const recorded =
+            data.filter(
+              p => p.usage.recorded
+            ).length;
+
+          if (recorded !== 138) {
+            throw new Error(
+              "Expected all 138 usage rows " +
+              "to match, got " + recorded
+            );
+          }
+
+          if (meta.battles.gen2ou !== 6576) {
+            throw new Error(
+              "Unexpected OU battle count"
+            );
+          }
+
+          if (
+            meta.battles.gen2ubers !== 924
+          ) {
+            throw new Error(
+              "Unexpected Ubers battle count"
+            );
+          }
+
+          /*
+              Reproduce production usage modifiers.
+          */
+          for (const tier of tierOrder) {
+            const inTier =
+              data.filter(
+                p => p.tier === tier
+              );
+
+            for (const p of inTier) {
+              p.usageModifier = 1.00;
+            }
+
+            const recordedTier =
+              inTier.filter(
+                p =>
+                  p.usage &&
+                  p.usage.recorded &&
+                  typeof
+                    p.usage.usagePct ===
+                    "number"
+              );
+
+            if (
+              recordedTier.length < 2
+            ) {
+              continue;
+            }
+
+            for (
+              const p of recordedTier
+            ) {
+              const usage =
+                p.usage.usagePct;
+
+              const higher =
+                recordedTier.filter(
+                  q =>
+                    q.usage.usagePct >
+                    usage
+                ).length;
+
+              const equal =
+                recordedTier.filter(
+                  q =>
+                    q.usage.usagePct ===
+                    usage
+                ).length;
+
+              const position =
+                higher +
+                ((equal - 1) / 2);
+
+              const percentile =
+                position /
+                (recordedTier.length - 1);
+
+              p.usageModifier =
+                0.85 +
+                percentile * 0.30;
+            }
+          }
+
+          let seed = 0x12345678;
+
+          function random() {
+            seed =
+              (
+                Math.imul(
+                  1664525,
+                  seed
+                ) +
+                1013904223
+              ) >>> 0;
+
+            return (
+              seed / 4294967296
+            );
+          }
+
+          function weightedChoice(
+            items,
+            getWeight
+          ) {
+            let total = 0;
+
+            for (
+              const item of items
+            ) {
+              total +=
+                getWeight(item);
+            }
+
+            let n =
+              random() * total;
+
+            for (
+              const item of items
+            ) {
+              n -=
+                getWeight(item);
+
+              if (n <= 0) {
+                return item;
+              }
+            }
+
+            return (
+              items[
+                items.length - 1
+              ]
+            );
+          }
+
+          function generateTeam(
+            maxTier = "Uber"
+          ) {
+            const maxPosition =
+              tierOrder.indexOf(
+                maxTier
+              );
+
+            const available =
+              data
+                .filter(
+                  p =>
+                    tierOrder.indexOf(
+                      p.tier
+                    ) <=
+                    maxPosition
+                )
+                .slice();
+
+            const team = [];
+
+            for (
+              let i = 0;
+              i < 6;
+              i++
+            ) {
+              const allowedTiers =
+                tierOrder
+                  .slice(
+                    0,
+                    maxPosition + 1
+                  )
+                  .filter(
+                    tier =>
+                      available.some(
+                        p =>
+                          p.tier ===
+                          tier
+                      )
+                  );
+
+              const rolledTier =
+                weightedChoice(
+                  allowedTiers,
+                  tier =>
+                    standardTierOdds[
+                      tier
+                    ]
+                );
+
+              const candidates =
+                available.filter(
+                  p =>
+                    p.tier ===
+                    rolledTier
+                );
+
+              const selected =
+                weightedChoice(
+                  candidates,
+                  p =>
+                    p.usageModifier
+                );
+
+              team.push(selected);
+
+              const index =
+                available.findIndex(
+                  p =>
+                    p.id ===
+                    selected.id
+                );
+
+              available.splice(
+                index,
+                1
+              );
+            }
+
+            return team;
+          }
+
+          const slotCounts =
+            Object.fromEntries(
+              tierOrder.map(
+                t => [t, 0]
+              )
+            );
+
+          let duplicateTeams = 0;
+          let teamsWithUber = 0;
+          const simulations = 100000;
+
+          for (
+            let i = 0;
+            i < simulations;
+            i++
+          ) {
+            const team =
+              generateTeam();
+
+            if (
+              new Set(
+                team.map(
+                  p => p.id
+                )
+              ).size !== 6
+            ) {
+              duplicateTeams++;
+            }
+
+            if (
+              team.some(
+                p =>
+                  p.tier ===
+                  "Uber"
+              )
+            ) {
+              teamsWithUber++;
+            }
+
+            for (const p of team) {
+              slotCounts[p.tier]++;
+            }
+          }
+
+          if (
+            duplicateTeams !== 0
+          ) {
+            throw new Error(
+              "Duplicate Pokémon " +
+              "detected in " +
+              duplicateTeams +
+              " simulated teams"
+            );
+          }
+
+          const ceilingChecks = {};
+
+          for (
+            const maxTier of tierOrder
+          ) {
+            const team =
+              generateTeam(maxTier);
+
+            const maxPosition =
+              tierOrder.indexOf(
+                maxTier
+              );
+
+            ceilingChecks[maxTier] =
+              team.every(
+                p =>
+                  tierOrder.indexOf(
+                    p.tier
+                  ) <=
+                  maxPosition
+              );
+
+            if (
+              !ceilingChecks[
+                maxTier
+              ]
+            ) {
+              throw new Error(
+                "Tier ceiling failed " +
+                "for " + maxTier
+              );
+            }
+          }
+
+          const slotPercent = {};
+
+          for (
+            const tier of tierOrder
+          ) {
+            slotPercent[tier] =
+              Number(
+                (
+                  100 *
+                  slotCounts[tier] /
+                  (simulations * 6)
+                ).toFixed(3)
+              );
+          }
+
+          console.log(
+            "Gen 2 validation passed."
+          );
+
+          console.log(
+            "Entries:",
+            data.length
+          );
+
+          console.log(
+            "Tier counts:",
+            JSON.stringify(counts)
+          );
+
+          console.log(
+            "Usage recorded:",
+            recorded
+          );
+
+          console.log(
+            "Usage missing:",
+            data.length - recorded
+          );
+
+          console.log(
+            "Battle counts:",
+            JSON.stringify(
+              meta.battles
+            )
+          );
+
+          console.log(
+            "100k slot rates:",
+            JSON.stringify(
+              slotPercent
+            )
+          );
+
+          console.log(
+            "Teams with Uber:",
+            (
+              100 *
+              teamsWithUber /
+              simulations
+            ).toFixed(3) + "%"
+          );
+
+          console.log(
+            "Ceilings:",
+            JSON.stringify(
+              ceilingChecks
+            )
+          );
+          NODE
