@@ -322,12 +322,14 @@ jobs:
                 fi
               done
 
-              local static_url="https://play.pokemonshowdown.com/sprites/gen${gen}/${slug}.png"
-              echo "Trying ${label}: ${static_url}"
-              if curl --fail --silent --location --max-time 10 --output /dev/null "${static_url}"; then
-                echo "Working sprite for ${label}: ${static_url}"
-                return 0
-              fi
+              for static_dir in "gen${gen}" gen5 home; do
+                local static_url="https://play.pokemonshowdown.com/sprites/${static_dir}/${slug}.png"
+                echo "Trying ${label}: ${static_url}"
+                if curl --fail --silent --location --max-time 10 --output /dev/null "${static_url}"; then
+                  echo "Working sprite for ${label}: ${static_url}"
+                  return 0
+                fi
+              done
             done
 
             echo "No working sprite found for ${label}" >&2
