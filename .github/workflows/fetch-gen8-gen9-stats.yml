@@ -1,0 +1,39 @@
+name: Fetch Gen 8 and 9 source stats
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fetch-gen8-gen9-stats.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch source stats
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "=== GEN8OU START ==="
+          curl --fail --silent --show-error --location "https://www.smogon.com/stats/2022-10/gen8ou-0.txt"
+          echo
+          echo "=== GEN8OU END ==="
+
+          echo "=== GEN8UBERS START ==="
+          curl --fail --silent --show-error --location "https://www.smogon.com/stats/2022-10/gen8ubers-0.txt"
+          echo
+          echo "=== GEN8UBERS END ==="
+
+          echo "=== GEN9OU START ==="
+          curl --fail --silent --show-error --location "https://www.smogon.com/stats/2026-08/gen9ou-0.txt"
+          echo
+          echo "=== GEN9OU END ==="
+
+          echo "=== GEN9UBERS START ==="
+          curl --fail --silent --show-error --location "https://www.smogon.com/stats/2026-08/gen9ubers-0.txt"
+          echo
+          echo "=== GEN9UBERS END ==="
