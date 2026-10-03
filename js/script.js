@@ -101,7 +101,8 @@ const datasets = {
     gen6: GEN6_POKEMON,
     gen7: GEN7_POKEMON,
     gen8: GEN8_POKEMON,
-    gen9: GEN9_POKEMON
+    gen9: GEN9_POKEMON,
+    championsou: CHAMPIONS_OU_POKEMON
 };
 
 
@@ -201,10 +202,15 @@ function updateTierAvailability() {
     const pokemonPool =
         datasets[poolSelect.value] || [];
 
-    const selectedPosition =
-        tierOrder.indexOf(
-            tierSelect.value
-        );
+    // Champions OU is an OU-only pool, even if Uber was selected before.
+    const maximumPosition = poolSelect.value === "championsou"
+        ? tierOrder.indexOf(CHAMPIONS_OU_DATASET_META.maximumTier)
+        : tierOrder.length - 1;
+
+    const selectedPosition = Math.min(
+        tierOrder.indexOf(tierSelect.value),
+        maximumPosition
+    );
 
     for (const option of tierSelect.options) {
 
@@ -229,7 +235,7 @@ function updateTierAvailability() {
             }).length;
 
         option.disabled =
-            eligibleCount < 6;
+            eligibleCount < 6 || optionPosition > maximumPosition;
 
     }
 
@@ -239,7 +245,7 @@ function updateTierAvailability() {
 
     for (
         let position = Math.max(selectedPosition, 0);
-        position < tierOrder.length;
+        position <= maximumPosition;
         position++
     ) {
 
@@ -1108,6 +1114,12 @@ function getPokemonSpriteUrls(
         );
 
     });
+
+    // New Champions forms may lack a hosted animated/static sprite.
+    // Keep an exact-form local image as the final fallback.
+    if (CHAMPIONS_OU_LOCAL_SPRITES[name]) {
+        urls.push(CHAMPIONS_OU_LOCAL_SPRITES[name]);
+    }
 
     return urls.filter(
         function (url, index) {
