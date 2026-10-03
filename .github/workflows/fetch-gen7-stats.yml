@@ -1,0 +1,28 @@
+name: Fetch Gen 7 source stats
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fetch-gen7-stats.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch October 2019 Gen 7 usage files
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== GEN7OU START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2019-10/gen7ou-0.txt"
+          echo
+          echo "=== GEN7OU END ==="
+
+          echo "=== GEN7UBERS START ==="
+          curl --fail --silent --show-error --location             "https://www.smogon.com/stats/2019-10/gen7ubers-0.txt"
+          echo
+          echo "=== GEN7UBERS END ==="
