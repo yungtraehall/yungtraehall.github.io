@@ -1076,6 +1076,39 @@ function getPokemonSpriteUrls(
 
     });
 
+
+    /*
+        Newer Pokémon do not always have a
+        generation-numbered static directory.
+
+        Showdown's gen5 directory contains its
+        current pixel-style static sprites,
+        including Generation 9 Pokémon/forms.
+        HOME sprites are a final broad fallback.
+    */
+
+    slugs.forEach(function (slug) {
+
+        urls.push(
+            "https://play.pokemonshowdown.com/" +
+            "sprites/gen5/" +
+            slug +
+            ".png"
+        );
+
+    });
+
+    slugs.forEach(function (slug) {
+
+        urls.push(
+            "https://play.pokemonshowdown.com/" +
+            "sprites/home/" +
+            slug +
+            ".png"
+        );
+
+    });
+
     return urls.filter(
         function (url, index) {
             return urls.indexOf(url) === index;
