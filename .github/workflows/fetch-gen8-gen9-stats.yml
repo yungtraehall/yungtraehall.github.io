@@ -301,24 +301,58 @@ jobs:
           }
           NODE
 
-      - name: Check representative Gen 8 and 9 sprite URLs
+      - name: Check representative Gen 8 and 9 sprite fallbacks
         shell: bash
         run: |
           set -euo pipefail
 
-          urls=(
-            "https://play.pokemonshowdown.com/sprites/ani/zacian-crowned.gif"
-            "https://play.pokemonshowdown.com/sprites/ani/calyrex-shadow.gif"
-            "https://play.pokemonshowdown.com/sprites/ani/urshifu-rapidstrike.gif"
-            "https://play.pokemonshowdown.com/sprites/ani/ogerpon-wellspring.gif"
-            "https://play.pokemonshowdown.com/sprites/ani/palafin-hero.gif"
-            "https://play.pokemonshowdown.com/sprites/ani/terapagos-terastal.gif"
-            "https://play.pokemonshowdown.com/sprites/ani/dudunsparce-threesegment.gif"
-          )
+          check_sprite() {
+            local gen="$1"
+            local label="$2"
+            shift 2
+            local slugs=("$@")
 
-          for url in "${urls[@]}"; do
-            echo "Checking $url"
-            curl --fail --silent --show-error --location --output /dev/null "$url"
-          done
+            for slug in "${slugs[@]}"; do
+              for dir in ani xyani; do
+                local url="https://play.pokemonshowdown.com/sprites/${dir}/${slug}.gif"
+                echo "Trying ${label}: ${url}"
+                if curl --fail --silent --location --max-time 10 --output /dev/null "${url}"; then
+                  echo "Working sprite for ${label}: ${url}"
+                  return 0
+                fi
+              done
 
-          echo "Representative Gen 8/9 sprite URLs passed."
+              local static_url="https://play.pokemonshowdown.com/sprites/gen${gen}/${slug}.png"
+              echo "Trying ${label}: ${static_url}"
+              if curl --fail --silent --location --max-time 10 --output /dev/null "${static_url}"; then
+                echo "Working sprite for ${label}: ${static_url}"
+                return 0
+              fi
+            done
+
+            echo "No working sprite found for ${label}" >&2
+            return 1
+          }
+
+          check_sprite 8 "Zacian-Crowned" \
+            "zacian-crowned" "zaciancrowned"
+
+          check_sprite 8 "Calyrex-Shadow" \
+            "calyrex-shadow" "calyrexshadow"
+
+          check_sprite 8 "Urshifu-Rapid-Strike" \
+            "urshifu-rapidstrike" "urshifu-rapid-strike" "urshifurapidstrike"
+
+          check_sprite 9 "Ogerpon-Wellspring" \
+            "ogerpon-wellspring" "ogerponwellspring"
+
+          check_sprite 9 "Palafin-Hero" \
+            "palafin-hero" "palafinhero"
+
+          check_sprite 9 "Terapagos-Terastal" \
+            "terapagos-terastal" "terapagosterastal"
+
+          check_sprite 9 "Dudunsparce-Three-Segment" \
+            "dudunsparce-threesegment" "dudunsparce-three-segment" "dudunsparcethreesegment"
+
+          echo "Representative Gen 8/9 sprite fallback validation passed."
