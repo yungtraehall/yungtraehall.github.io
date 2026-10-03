@@ -99,7 +99,9 @@ const datasets = {
     gen4: GEN4_POKEMON,
     gen5: GEN5_POKEMON,
     gen6: GEN6_POKEMON,
-    gen7: GEN7_POKEMON
+    gen7: GEN7_POKEMON,
+    gen8: GEN8_POKEMON,
+    gen9: GEN9_POKEMON
 };
 
 
