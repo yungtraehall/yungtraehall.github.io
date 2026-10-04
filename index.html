@@ -18,6 +18,7 @@
     <script src="data/gen8.js" defer></script>
     <script src="data/gen9.js" defer></script>
     <script src="data/champions-ou.js" defer></script>
+    <script src="data/national-dex.js" defer></script>
     <script src="js/script.js" defer></script>
 </head>
 
@@ -47,13 +48,12 @@
                     <option value="gen8">Generation 8</option>
                     <option value="gen9">Generation 9</option>
                     <option value="championsou">Pokémon Champions OU</option>
-                    <option value="natdex" disabled>
-                        National Dex (Coming Later)
-                    </option>
+                    <option value="nationaldex">National Dex</option>
+                    <option value="bananza">Bananza (No Tier Ceiling)</option>
                 </select>
             </div>
 
-            <div class="setting">
+            <div class="setting" id="maximum-tier-setting">
                 <label for="tier-select">Maximum Tier</label>
 
                 <select id="tier-select">
@@ -143,6 +143,7 @@
                 class="reveal-tier-name"
                 aria-live="polite"
             ></div>
+            <div id="reveal-pull-chance" class="reveal-pull-chance" aria-live="polite"></div>
 
             <button
                 id="reveal-continue-button"
