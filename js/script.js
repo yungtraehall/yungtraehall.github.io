@@ -23,63 +23,36 @@ const tierOrder = [
 
 
 /*
-    STANDARD TIER ODDS
+    TIER ODDS PROFILES
 
-    These are our Hybrid Model v0.1 odds.
+    Each profile totals 100% when all tiers through Uber are present.
+    These percentages apply to individual team slots.
 
-    When Uber is the maximum tier, these values
-    add up to exactly 100%.
-
-    If the user selects a lower maximum tier,
-    unavailable tiers are removed automatically
-    and the remaining weights are rebalanced.
+    A lower Maximum Tier removes stronger tiers and rebalances the rest.
+    Structurally absent tiers fold into the nearest available tier, as before.
+    ++ targets 7% Uber, 38% OU, and only 3% combined PU/ZU.
 */
 
-const standardTierOdds = {
-    "ZU": 30,
-    "PU": 22,
-    "NU": 18,
-    "RU": 14,
-    "UU": 10,
-    "OU": 5.5,
-    "Uber": 0.5
-};
-
-
-/*
-    ODDS MODIFIERS
-
-    These modify how strongly the generator favors
-    higher or lower competitive tiers.
-
-    =   Standard odds
-    +   Stronger Pokémon become more common
-    ++  Stronger Pokémon become much more common
-    -   Weaker Pokémon become more common
-    --  Weaker Pokémon become much more common
-
-    These do NOT change eligibility.
-*/
-
-const oddsStrengthFactors = {
-    "--": 0.65,
-    "-": 0.80,
-    "=": 1.00,
-    "+": 1.40,
-    "++": 1.80
+const tierOddsProfiles = {
+    "--": { ZU: 18, PU: 20, NU: 22, RU: 20, UU: 12, OU: 7, Uber: 1 },
+    "-":  { ZU: 12, PU: 16, NU: 20, RU: 21, UU: 18, OU: 11.5, Uber: 1.5 },
+    "=":  { ZU: 6, PU: 10, NU: 16, RU: 22, UU: 21, OU: 22.5, Uber: 2.5 },
+    "+":  { ZU: 3, PU: 6, NU: 12, RU: 21, UU: 23, OU: 30.5, Uber: 4.5 },
+    "++": { ZU: 1, PU: 2, NU: 9, RU: 18, UU: 25, OU: 38, Uber: 7 }
 };
 
 
 /*
     Individual Pokémon modifiers.
 
-    A Pokémon with very high usage within its tier
+    For OU and Uber, a Pokémon with very high usage within its tier
     can be as low as 0.85x.
 
     A Pokémon with very low usage within its tier
     can be as high as 1.15x.
 
     Missing usage data stays neutral at 1.00x.
+    UU and lower always have equal within-tier weights.
 */
 
 const MIN_USAGE_MODIFIER = 0.85;
@@ -1271,21 +1244,21 @@ function generateTeam(
             STAGE 2:
             Select a Pokémon inside that tier.
 
-            usageModifier provides the small
-            individual adjustment.
+            Apply the small OU/Uber usage adjustment.
+            UU and lower remain equal within a tier.
         */
 
         const selectedPokemon =
             weightedRandomChoice(
                 pokemonInTier,
                 function (pokemon) {
-                    return pokemon.usageModifier;
+                    return getPokemonPullWeight(pokemon);
                 }
             );
 
 
-        const pokemonWeightTotal = pokemonInTier.reduce((total, pokemon) => total + pokemon.usageModifier, 0);
-        generatedPokemon.push({ ...selectedPokemon, pullProbability: rolledTierChance * selectedPokemon.usageModifier / pokemonWeightTotal });
+        const pokemonWeightTotal = pokemonInTier.reduce((total, pokemon) => total + getPokemonPullWeight(pokemon), 0);
+        generatedPokemon.push({ ...selectedPokemon, pullProbability: rolledTierChance * getPokemonPullWeight(selectedPokemon) / pokemonWeightTotal });
 
 
         /*
@@ -1317,24 +1290,73 @@ function generateTeam(
     =========================================
 */
 
-function getTierSelectionData(availablePokemon,pokemonPool,selectedTier,selectedOdds) {
- const selectedTierPosition=tierOrder.indexOf(selectedTier), ceilingTiers=tierOrder.slice(0,selectedTierPosition+1);
- const structuralTiers=ceilingTiers.filter(tier=>pokemonPool.some(p=>p.tier===tier));
- const availableTiers=structuralTiers.filter(tier=>availablePokemon.some(p=>p.tier===tier));
- const strengthFactor=oddsStrengthFactors[selectedOdds], tierWeights={};
- structuralTiers.forEach(tier=>tierWeights[tier]=0);
- ceilingTiers.forEach(tier=>{
-  const tierPosition=tierOrder.indexOf(tier), weight=standardTierOdds[tier]*Math.pow(strengthFactor,tierPosition);
-  let targetTier=tier;
-  if(!structuralTiers.includes(tier)){
-   targetTier=null;
-   for(let position=tierPosition-1;position>=0;position--){const c=tierOrder[position];if(structuralTiers.includes(c)){targetTier=c;break;}}
-   if(!targetTier)for(let position=tierPosition+1;position<=selectedTierPosition;position++){const c=tierOrder[position];if(structuralTiers.includes(c)){targetTier=c;break;}}
-  }
-  if(targetTier)tierWeights[targetTier]+=weight;
- });
- return {availableTiers,tierWeights};
+function getTierSelectionData(
+    availablePokemon,
+    pokemonPool,
+    selectedTier,
+    selectedOdds
+) {
+    const selectedTierPosition = tierOrder.indexOf(selectedTier);
+    const ceilingTiers = tierOrder.slice(0, selectedTierPosition + 1);
+    const profile = tierOddsProfiles[selectedOdds] || tierOddsProfiles["="];
+
+    const structuralTiers = ceilingTiers.filter(function (tier) {
+        return pokemonPool.some(function (pokemon) {
+            return pokemon.tier === tier;
+        });
+    });
+
+    const availableTiers = structuralTiers.filter(function (tier) {
+        return availablePokemon.some(function (pokemon) {
+            return pokemon.tier === tier;
+        });
+    });
+
+    const tierWeights = {};
+    structuralTiers.forEach(function (tier) {
+        tierWeights[tier] = 0;
+    });
+
+    ceilingTiers.forEach(function (tier) {
+        const tierPosition = tierOrder.indexOf(tier);
+        let targetTier = tier;
+
+        if (!structuralTiers.includes(tier)) {
+            targetTier = null;
+
+            // Prefer the nearest weaker tier; otherwise use a stronger tier.
+            for (let position = tierPosition - 1; position >= 0; position--) {
+                const candidate = tierOrder[position];
+                if (structuralTiers.includes(candidate)) {
+                    targetTier = candidate;
+                    break;
+                }
+            }
+
+            if (!targetTier) {
+                for (
+                    let position = tierPosition + 1;
+                    position <= selectedTierPosition;
+                    position++
+                ) {
+                    const candidate = tierOrder[position];
+                    if (structuralTiers.includes(candidate)) {
+                        targetTier = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (targetTier) {
+            tierWeights[targetTier] += profile[tier];
+        }
+    });
+
+    // Exhausted tiers are omitted so remaining tier weights rebalance.
+    return { availableTiers, tierWeights };
 }
+
 function chooseTier(availablePokemon,pokemonPool,selectedTier,selectedOdds) {
  const s=getTierSelectionData(availablePokemon,pokemonPool,selectedTier,selectedOdds);
  return weightedRandomChoice(s.availableTiers,tier=>s.tierWeights[tier]);
@@ -1345,6 +1367,16 @@ function chooseTier(availablePokemon,pokemonPool,selectedTier,selectedOdds) {
     STAGE 2: USAGE MODIFIERS
     =========================================
 */
+
+function getPokemonPullWeight(pokemon) {
+    // UU and lower share their tier equally. OU/Uber keep their usage adjustment.
+    if (pokemon.tier !== "Uber" && pokemon.tier !== "OU") {
+        return 1.00;
+    }
+
+    return pokemon.usageModifier || 1.00;
+}
+
 
 function assignUsageModifiers(pokemonPool) {
 
@@ -1373,6 +1405,11 @@ function assignUsageModifiers(pokemonPool) {
         pokemonInTier.forEach(function (pokemon) {
             pokemon.usageModifier = 1.00;
         });
+
+        // Only OU and Uber receive individual usage adjustments.
+        if (tier !== "Uber" && tier !== "OU") {
+            return;
+        }
 
 
         /*
@@ -1550,8 +1587,9 @@ function simulateTeams(numberOfTeams = 10000) {
     const selectedPool =
         poolSelect.value;
 
-    const selectedTier =
-        tierSelect.value;
+    const selectedTier = selectedPool === "bananza"
+        ? "Uber"
+        : tierSelect.value;
 
     const selectedOdds =
         oddsSelect.value;
@@ -1649,4 +1687,16 @@ function simulateTeams(numberOfTeams = 10000) {
         ).toFixed(2) + "%"
     );
 
+
+    return {
+        numberOfTeams,
+        totalPokemon,
+        selectedPool,
+        selectedTier,
+        selectedOdds,
+        tierCounts,
+        results,
+        teamsWithUber,
+        teamsWithUberPercentage: teamsWithUber / numberOfTeams * 100
+    };
 }
