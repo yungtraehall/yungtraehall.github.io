@@ -102,7 +102,9 @@ const datasets = {
     gen7: GEN7_POKEMON,
     gen8: GEN8_POKEMON,
     gen9: GEN9_POKEMON,
-    championsou: CHAMPIONS_OU_POKEMON
+    championsou: CHAMPIONS_OU_POKEMON,
+    nationaldex: NATIONAL_DEX_POKEMON,
+    bananza: BANANZA_POKEMON
 };
 
 
@@ -120,6 +122,9 @@ const poolSelect =
 
 const tierSelect =
     document.getElementById("tier-select");
+
+const maximumTierSetting = document.getElementById("maximum-tier-setting");
+const revealPullChance = document.getElementById("reveal-pull-chance");
 
 const oddsSelect =
     document.getElementById("odds-select");
@@ -203,9 +208,14 @@ function updateTierAvailability() {
         datasets[poolSelect.value] || [];
 
     // Champions OU is an OU-only pool, even if Uber was selected before.
-    const maximumPosition = poolSelect.value === "championsou"
-        ? tierOrder.indexOf(CHAMPIONS_OU_DATASET_META.maximumTier)
-        : tierOrder.length - 1;
+    const hasTierCeiling = poolSelect.value !== "bananza";
+    maximumTierSetting.hidden = !hasTierCeiling;
+    const maximumPosition = poolSelect.value === "bananza"
+        ? tierOrder.length - 1
+        : poolSelect.value === "championsou"
+            ? tierOrder.indexOf(CHAMPIONS_OU_DATASET_META.maximumTier)
+            : tierOrder.length - 1;
+    if (!hasTierCeiling) tierSelect.value = "Uber";
 
     const selectedPosition = Math.min(
         tierOrder.indexOf(tierSelect.value),
@@ -305,8 +315,7 @@ async function generatePokemon() {
     const pokemonPool =
         datasets[selectedPool];
 
-    const selectedTier =
-        tierSelect.value;
+    const selectedTier = selectedPool === "bananza" ? "Uber" : tierSelect.value;
 
     const selectedOdds =
         oddsSelect.value;
@@ -379,6 +388,16 @@ async function generatePokemon() {
     =========================================
 */
 
+function getRarityDetails(probability) {
+ if(typeof probability!=="number"||probability<=0)return null;
+ let label,className;
+ if(probability<=0.0001){label="Extremely Rare";className="rarity-extremely-rare";}
+ else if(probability<=0.001){label="Very Rare";className="rarity-very-rare";}
+ else if(probability<=0.01){label="Rare";className="rarity-rare";}
+ else return null;
+ return {label,className,oddsText:"1 in "+Math.round(1/probability).toLocaleString()};
+}
+
 function renderTeam(generatedPokemon) {
 
     for (let i = 0; i < pokemonCards.length; i++) {
@@ -386,8 +405,9 @@ function renderTeam(generatedPokemon) {
         const pokemon =
             generatedPokemon[i];
 
-        const tierClass =
-            "tier-" + pokemon.tier.toLowerCase();
+        const tierLabel = pokemon.sourceTier === "AG" ? "AG" : pokemon.tier;
+        const tierClass = "tier-" + tierLabel.toLowerCase();
+        const rarity = getRarityDetails(pokemon.pullProbability);
 
 
         /*
@@ -414,8 +434,9 @@ function renderTeam(generatedPokemon) {
             </div>
 
             <div class="pokemon-tier ${tierClass}">
-                ${pokemon.tier}
+                ${tierLabel}
             </div>
+            ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}" title="Chance in this slot">${rarity.label} · ${rarity.oddsText}</div>` : ""}
         `;
 
         const spriteImage =
@@ -677,8 +698,11 @@ async function playRevealSequence(
     revealPreviewSprite.alt =
         previewPokemon.name;
 
-    revealPokemonName.textContent =
-        previewPokemon.name;
+    revealPokemonName.textContent = previewPokemon.name;
+    const previewRarity = getRarityDetails(previewPokemon.pullProbability);
+    const previewTierLabel = previewPokemon.sourceTier === "AG" ? "AG" : previewPokemon.tier;
+    revealTierName.textContent = previewTierLabel;
+    revealPullChance.textContent = previewRarity ? previewRarity.label + " · " + previewRarity.oddsText + " chance in this slot" : "";
 
     setPokemonSpriteWithFallback(
         revealPreviewSprite,
@@ -700,7 +724,7 @@ async function playRevealSequence(
         );
 
         revealTierName.textContent =
-            highestTier;
+            previewTierLabel;
 
         revealOverlay.classList.add(
             "active",
@@ -732,6 +756,7 @@ async function playRevealSequence(
         revealPreviewSprite.alt = "";
         revealPreviewSprite.onerror = null;
         revealPokemonName.textContent = "";
+        revealPullChance.textContent = "";
 
         return;
 
@@ -763,14 +788,14 @@ async function playRevealSequence(
     if (highestTier === "Uber") {
         revealOverlay.classList.add("reveal-uber");
     }
+    if (previewRarity && previewRarity.className === "rarity-extremely-rare") {
+        revealOverlay.classList.add("rarity-extremely-rare");
+    }
 
     revealOverlay.style.setProperty(
         "--reveal-color",
         revealTierColors[highestTier]
     );
-
-    revealTierName.textContent =
-        highestTier;
 
     revealOverlay.setAttribute(
         "aria-hidden",
@@ -896,6 +921,7 @@ async function playRevealSequence(
     revealPreviewSprite.onerror = null;
 
     revealPokemonName.textContent = "";
+    revealPullChance.textContent = "";
     revealContinueButton.blur();
 
     document.body.classList.remove(
@@ -1222,13 +1248,10 @@ function generateTeam(
             Roll the Smogon rarity tier.
         */
 
-        const rolledTier =
-            chooseTier(
-                availablePokemon,
-                pokemonPool,
-                selectedTier,
-                selectedOdds
-            );
+        const tierSelection = getTierSelectionData(availablePokemon, pokemonPool, selectedTier, selectedOdds);
+        const rolledTier = weightedRandomChoice(tierSelection.availableTiers, tier => tierSelection.tierWeights[tier]);
+        const tierWeightTotal = tierSelection.availableTiers.reduce((total, tier) => total + tierSelection.tierWeights[tier], 0);
+        const rolledTierChance = tierSelection.tierWeights[rolledTier] / tierWeightTotal;
 
 
         /*
@@ -1261,7 +1284,8 @@ function generateTeam(
             );
 
 
-        generatedPokemon.push(selectedPokemon);
+        const pokemonWeightTotal = pokemonInTier.reduce((total, pokemon) => total + pokemon.usageModifier, 0);
+        generatedPokemon.push({ ...selectedPokemon, pullProbability: rolledTierChance * selectedPokemon.usageModifier / pokemonWeightTotal });
 
 
         /*
@@ -1293,168 +1317,28 @@ function generateTeam(
     =========================================
 */
 
-function chooseTier(
-    availablePokemon,
-    pokemonPool,
-    selectedTier,
-    selectedOdds
-) {
-
-    const selectedTierPosition =
-        tierOrder.indexOf(selectedTier);
-
-    const ceilingTiers =
-        tierOrder.slice(
-            0,
-            selectedTierPosition + 1
-        );
-
-    /*
-        Historical generations do not always have
-        every modern generator bucket.
-
-        Generation 1, for example, has no structural
-        ZU, PU, or RU bucket after fully-evolved
-        filtering.
-
-        Instead of deleting those probability weights
-        and accidentally making OU/Uber much more
-        common, fold a structurally missing tier into
-        the nearest tier that actually exists in that
-        generation.
-
-        This keeps the broad Standard odds meaningful
-        across generations. It does NOT affect tiers
-        that merely become empty during one six-Pokémon
-        roll; those continue to rebalance as before.
-    */
-
-    const structuralTiers =
-        ceilingTiers.filter(function (tier) {
-
-            return pokemonPool.some(function (pokemon) {
-                return pokemon.tier === tier;
-            });
-
-        });
-
-    const availableTiers =
-        structuralTiers.filter(function (tier) {
-
-            return availablePokemon.some(function (pokemon) {
-                return pokemon.tier === tier;
-            });
-
-        });
-
-    const strengthFactor =
-        oddsStrengthFactors[selectedOdds];
-
-    const tierWeights = {};
-
-    structuralTiers.forEach(function (tier) {
-        tierWeights[tier] = 0;
-    });
-
-    ceilingTiers.forEach(function (tier) {
-
-        const tierPosition =
-            tierOrder.indexOf(tier);
-
-        const weight =
-            standardTierOdds[tier] *
-            Math.pow(
-                strengthFactor,
-                tierPosition
-            );
-
-        let targetTier = tier;
-
-        if (!structuralTiers.includes(tier)) {
-
-            targetTier = null;
-
-            /*
-                Prefer the nearest weaker existing tier.
-                If none exists, use the nearest stronger
-                existing tier.
-            */
-
-            for (
-                let position =
-                    tierPosition - 1;
-                position >= 0;
-                position--
-            ) {
-
-                const candidate =
-                    tierOrder[position];
-
-                if (
-                    structuralTiers.includes(
-                        candidate
-                    )
-                ) {
-                    targetTier = candidate;
-                    break;
-                }
-
-            }
-
-            if (!targetTier) {
-
-                for (
-                    let position =
-                        tierPosition + 1;
-                    position <=
-                        selectedTierPosition;
-                    position++
-                ) {
-
-                    const candidate =
-                        tierOrder[position];
-
-                    if (
-                        structuralTiers.includes(
-                            candidate
-                        )
-                    ) {
-                        targetTier =
-                            candidate;
-                        break;
-                    }
-
-                }
-
-            }
-
-        }
-
-        if (targetTier) {
-            tierWeights[targetTier] +=
-                weight;
-        }
-
-    });
-
-
-    /*
-        If a real tier has been exhausted during the
-        current six-Pokémon roll, omit it here.
-
-        weightedRandomChoice then rebalances only the
-        tiers that still have Pokémon available.
-    */
-
-    return weightedRandomChoice(
-        availableTiers,
-        function (tier) {
-            return tierWeights[tier];
-        }
-    );
-
+function getTierSelectionData(availablePokemon,pokemonPool,selectedTier,selectedOdds) {
+ const selectedTierPosition=tierOrder.indexOf(selectedTier), ceilingTiers=tierOrder.slice(0,selectedTierPosition+1);
+ const structuralTiers=ceilingTiers.filter(tier=>pokemonPool.some(p=>p.tier===tier));
+ const availableTiers=structuralTiers.filter(tier=>availablePokemon.some(p=>p.tier===tier));
+ const strengthFactor=oddsStrengthFactors[selectedOdds], tierWeights={};
+ structuralTiers.forEach(tier=>tierWeights[tier]=0);
+ ceilingTiers.forEach(tier=>{
+  const tierPosition=tierOrder.indexOf(tier), weight=standardTierOdds[tier]*Math.pow(strengthFactor,tierPosition);
+  let targetTier=tier;
+  if(!structuralTiers.includes(tier)){
+   targetTier=null;
+   for(let position=tierPosition-1;position>=0;position--){const c=tierOrder[position];if(structuralTiers.includes(c)){targetTier=c;break;}}
+   if(!targetTier)for(let position=tierPosition+1;position<=selectedTierPosition;position++){const c=tierOrder[position];if(structuralTiers.includes(c)){targetTier=c;break;}}
+  }
+  if(targetTier)tierWeights[targetTier]+=weight;
+ });
+ return {availableTiers,tierWeights};
 }
-
+function chooseTier(availablePokemon,pokemonPool,selectedTier,selectedOdds) {
+ const s=getTierSelectionData(availablePokemon,pokemonPool,selectedTier,selectedOdds);
+ return weightedRandomChoice(s.availableTiers,tier=>s.tierWeights[tier]);
+}
 
 /*
     =========================================
