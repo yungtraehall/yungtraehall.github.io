@@ -1335,3 +1335,49 @@ body.reveal-active {
 .reveal-overlay.pokemon-revealed .reveal-pull-chance { opacity:1; transform:translate(-50%,0); }
 .reveal-overlay.rarity-extremely-rare .reveal-orb { background:rgba(255,216,120,.13); box-shadow:0 0 45px rgba(255,196,73,.36),inset 0 0 30px rgba(255,255,255,.12); }
 .reveal-overlay.rarity-extremely-rare .reveal-preview-sprite { filter:brightness(0) drop-shadow(0 0 12px #fff0bb) drop-shadow(0 0 46px #e9b83f); }
+
+
+/* Details remain available on every revealed team card. */
+.pokemon-details-button {
+    margin: 10px auto 0;
+    padding: 7px 18px;
+    border: 1px solid #7585ab;
+    border-radius: 8px;
+    background: #263655;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+}
+.pokemon-details-button:hover { background: #35496f; }
+.pokemon-details-button:focus-visible, #pokemon-details-close:focus-visible { outline: 3px solid #bcd5ff; outline-offset: 3px; }
+.pokemon-category { margin-top: 8px; color: #ffe0a3; font-size: 0.78rem; }
+#pokemon-details-dialog {
+    width: min(920px, calc(100vw - 28px));
+    max-height: calc(100dvh - 36px);
+    box-sizing: border-box;
+    padding: 24px;
+    border: 1px solid #667ca8;
+    border-radius: 16px;
+    background: #142039;
+    color: #eef3ff;
+    text-align: left;
+    overflow-y: auto;
+}
+#pokemon-details-dialog::backdrop { background: rgb(0 0 0 / 75%); }
+.details-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.details-heading h2 { margin: 0; font-size: 1.5rem; }
+#pokemon-details-close { border: 1px solid #7585ab; background: #263655; color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.details-pool { color: #ffe0a3; }
+.details-profile { display: flex; gap: 24px; flex-wrap: wrap; }
+.details-profile dt { color: #adbfdf; font-size: 0.85rem; }
+.details-profile dd { margin: 6px 0 0; }
+.details-note { color: #bdcbe3; font-size: 0.85rem; line-height: 1.5; }
+.details-table-wrap { overflow-x: auto; border: 1px solid #455573; border-radius: 8px; }
+.details-table { width: 100%; min-width: 710px; border-collapse: collapse; font-size: 0.85rem; }
+.details-table th, .details-table td { padding: 12px; border-bottom: 1px solid #455573; vertical-align: top; text-align: left; }
+.details-table thead { background: #243452; }
+.details-table th[scope="row"] { white-space: nowrap; }
+.details-table small { display: block; margin-top: 5px; }
+#pokemon-details-dialog a { color: #a9cdff; }
+@media (max-width: 600px) { #pokemon-details-dialog { padding: 16px; } }

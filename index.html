@@ -19,6 +19,8 @@
     <script src="data/gen9.js" defer></script>
     <script src="data/champions-ou.js" defer></script>
     <script src="data/national-dex.js" defer></script>
+    <script src="data/pokemon-details.js" defer></script>
+    <script src="js/details.js" defer></script>
     <script src="js/script.js" defer></script>
 </head>
 
@@ -156,6 +158,14 @@
 
         <div class="reveal-flash"></div>
     </div>
+
+    <dialog id="pokemon-details-dialog" aria-labelledby="pokemon-details-title">
+        <div class="details-heading">
+            <h2 id="pokemon-details-title">Pokémon details</h2>
+            <button id="pokemon-details-close" type="button" aria-label="Close Pokémon details">Close</button>
+        </div>
+        <div id="pokemon-details-content"></div>
+    </dialog>
 
 </body>
 

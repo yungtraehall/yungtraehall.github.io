@@ -315,6 +315,8 @@ async function generatePokemon() {
         That tier decides the reveal color.
     */
 
+    generatedPokemon.forEach(pokemon => { pokemon.selectedPool = selectedPool; });
+
     const highestTier =
         getHighestTier(generatedPokemon);
 
@@ -409,8 +411,12 @@ function renderTeam(generatedPokemon) {
             <div class="pokemon-tier ${tierClass}">
                 ${tierLabel}
             </div>
+            ${getRarityCategory(pokemon).label !== "Standard" ? `<div class="pokemon-category">${getRarityCategory(pokemon).label}</div>` : ""}
+            <button class="pokemon-details-button" type="button" aria-label="Details for ${pokemon.name}">Details</button>
             ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}" title="Chance in this slot">${rarity.label} · ${rarity.oddsText}</div>` : ""}
         `;
+
+        pokemonCards[i].querySelector(".pokemon-details-button").addEventListener("click", () => openPokemonDetails(pokemon));
 
         const spriteImage =
             pokemonCards[i].querySelector(
@@ -811,14 +817,7 @@ async function playRevealSequence(
         Lower tiers keep the quicker standard cadence.
     */
 
-    const finalToneDelay =
-        (
-            highestTier === "UU" ||
-            highestTier === "OU" ||
-            highestTier === "Uber"
-        )
-            ? 1100
-            : 650;
+    const finalToneDelay = getFinalToneDelay(highestTier);
 
     await sleep(finalToneDelay);
 
@@ -1038,6 +1037,14 @@ function getPokemonSpriteUrls(
 
     const urls = [];
 
+    // Historical pools stay in their own era, including on fallback.
+    if (generation >= 1 && generation <= 5) {
+        if (generation === 5) {
+            slugs.forEach(slug => urls.push(`https://play.pokemonshowdown.com/sprites/gen5ani/${slug}.gif`));
+        }
+        slugs.forEach(slug => urls.push(`https://play.pokemonshowdown.com/sprites/gen${generation}/${slug}.png`));
+        return urls;
+    }
 
     /*
         Use Showdown's current animated sprite folder
@@ -1368,13 +1375,34 @@ function chooseTier(availablePokemon,pokemonPool,selectedTier,selectedOdds) {
     =========================================
 */
 
+const FEATURED_RARE_UBERS = new Set([
+    "calyrexice", "kyogre", "eternatus", "necrozmaduskmane", "zaciancrowned"
+]);
+// Add the user-approved exact-form IDs here when the Rare OU list is supplied.
+const RARE_OU_POKEMON = new Set([]);
+
+function getRarityCategory(pokemon) {
+    if (pokemon.sourceTier === "AG") return { label: "Anything Goes", multiplier: 0.10 };
+    if (pokemon.tier === "Uber" && FEATURED_RARE_UBERS.has(pokemon.id)) {
+        return { label: "Featured rare Uber", multiplier: 0.50 };
+    }
+    if (pokemon.tier === "OU" && RARE_OU_POKEMON.has(pokemon.id)) {
+        return { label: "Rare OU", multiplier: 0.75 };
+    }
+    return { label: "Standard", multiplier: 1.00 };
+}
+
+function getFinalToneDelay(tier) {
+    return tier === "Uber" ? 1850 : (tier === "UU" || tier === "OU" ? 1100 : 650);
+}
+
 function getPokemonPullWeight(pokemon) {
     // UU and lower share their tier equally. OU/Uber keep their usage adjustment.
     if (pokemon.tier !== "Uber" && pokemon.tier !== "OU") {
         return 1.00;
     }
 
-    return pokemon.usageModifier || 1.00;
+    return (pokemon.usageModifier || 1.00) * getRarityCategory(pokemon).multiplier;
 }
 
 
