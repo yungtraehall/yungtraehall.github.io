@@ -18,7 +18,7 @@ This replaces the original baseline plus exponential strength modifier, which ga
 
 Lower maximum tiers remove stronger tier weights and normalize the remaining weights. A tier absent from the pool folds into the nearest weaker tier, or the nearest stronger tier if none exists below it. This preserves the previous handling of historical and Champions pools. A tier exhausted by selecting its last member rebalances among remaining tiers. Teams still contain six distinct Pokemon/forms.
 
-OU and Uber keep their existing individual usage adjustment. UU and lower are equal within their tiers. The tier increase therefore also increases the current individual OU and Uber chances. The rarity badge uses the actual conditional chance for the slot, including removal of previous picks.
+OU and Uber keep their existing individual usage adjustment. UU and lower are equal within their tiers. The tier increase therefore also increases the current individual OU and Uber chances. The numeric pull odds use the actual conditional chance for the slot, including removal of previous picks. Special rarity badges follow the curated groups, independently of those numbers. Ordinary Pokémon do not receive probability-based Rare/Very Rare labels: large lower-tier pools should not make their members appear to outrank OU or Uber.
 
 ## Individual rarity categories
 

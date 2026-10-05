@@ -66,11 +66,18 @@ Gen 1–4 sprites use only the selected generation’s PNG directory. Gen 5 trie
 are tried within each era; a missing old asset is not replaced by a modern one.
 Official sprite directory: https://play.pokemonshowdown.com/sprites/
 
-The final chime delay is 650 ms for lower tiers, 1,100 ms for UU/OU, and 1,850 ms
-for Uber: Uber’s final tone arrives 750 ms later than UU/OU. Frequencies and the
+The final chime delay is 650 ms for lower tiers, 1,100 ms for UU/OU, and 1,350 ms
+for Uber: Uber’s final tone arrives 250 ms later than UU/OU. Frequencies and the
 other reveal timing stay unchanged.
 
 The Featured rare Ubers are Calyrex-Ice, Kyogre, Eternatus,
 Necrozma-Dusk-Mane, and Zacian-Crowned (0.50×). AG takes precedence (0.10×,
 Bananza only). Rare OU is wired for a user-supplied exact-form list (0.75×).
 These affect selection within their tier and preserve the boosted tier odds.
+
+Rarity presentation separates curated categories from exact pull odds. Standard
+Pokémon show their tier and neutral “Pull odds this slot: 1 in …” text. Only
+Featured rare Ubers, selected Rare OU, and AG receive special badges, both on the
+cards and above the reveal orb. A large lower-tier pool cannot assign an ordinary
+Pokémon a “Very Rare” label. Numeric probabilities and generator weights remain
+unchanged. The supplied Uber/OU lists can update the curated group membership.
