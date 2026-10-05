@@ -20,11 +20,11 @@ Lower maximum tiers remove stronger tier weights and normalize the remaining wei
 
 OU and Uber keep their existing individual usage adjustment. UU and lower are equal within their tiers. The tier increase therefore also increases the current individual OU and Uber chances. The rarity badge uses the actual conditional chance for the slot, including removal of previous picks.
 
-## Individual rarity categories for the next pass
+## Individual rarity categories
 
-The priority in this change is the tier boost. The following category plan records the reviewed starting multipliers; these multipliers have not been applied to the generator yet.
+The reviewed category multipliers now apply within each tier. The Rare OU category is ready but has no members until the user supplies the list.
 
-| Category | Proposed multiplier | Pokemon |
+| Category | Multiplier | Pokemon |
 | --- | ---: | --- |
 | AG | 0.10x | Calyrex-Shadow, Koraidon, Miraidon, Rayquaza-Mega, Xerneas; Bananza only |
 | Featured rare Ubers | 0.50x | Calyrex-Ice, Kyogre, Eternatus, Necrozma-Dusk-Mane, Zacian-Crowned |
@@ -33,7 +33,7 @@ The priority in this change is the tier boost. The following category plan recor
 | Other OU | 1.00x | Remaining OU entries |
 | UU and lower | 1.00x | Equal within each tier |
 
-Zacian-Crowned has no separate category. Category multipliers will divide up their tier's share, rather than change how often the tier itself is rolled.
+Zacian-Crowned has no separate category. Category multipliers divide up their tier's share, rather than change how often the tier itself is rolled.
 
 ## Verification
 

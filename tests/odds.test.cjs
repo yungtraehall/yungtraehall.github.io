@@ -60,7 +60,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability
+    simulateTeams, updateTierAvailability, getRarityCategory, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -85,6 +85,23 @@ for (const tier of ["UU", "RU", "NU", "PU", "ZU"]) {
     assert.equal(generator.getPokemonPullWeight({ tier, usageModifier: 0.85 }), 1);
     assert.equal(generator.getPokemonPullWeight({ tier, usageModifier: 1.15 }), 1);
 }
+
+assert.equal(generator.getPokemonPullWeight({ id: "zaciancrowned", tier: "Uber", usageModifier: 1 }), 0.5);
+assert.equal(generator.getPokemonPullWeight({ id: "kyogre", tier: "Uber", usageModifier: 0.85 }), 0.425);
+assert.equal(generator.getRarityCategory({ id: "zaciancrowned", sourceTier: "AG", tier: "Uber" }).multiplier, 0.1);
+assert.equal(generator.getRarityCategory({ id: "kyogreprimal", tier: "Uber" }).multiplier, 1);
+generator.RARE_OU_POKEMON.add("example");
+assert.equal(generator.getPokemonPullWeight({ id: "example", tier: "OU", usageModifier: 1 }), 0.75);
+assert.equal(generator.getPokemonPullWeight({ id: "example", tier: "UU", usageModifier: 1 }), 1);
+generator.RARE_OU_POKEMON.delete("example");
+for (let gen = 1; gen <= 4; gen++) {
+    const urls = generator.getPokemonSpriteUrls("Mewtwo", gen);
+    assert.ok(urls.every(url => url.includes(`/gen${gen}/`) && url.endsWith(".png")));
+}
+assert.match(generator.getPokemonSpriteUrls("Mewtwo", 5)[0], /gen5ani\/mewtwo\.gif$/);
+assert.match(generator.getPokemonSpriteUrls("Mewtwo", 9)[0], /sprites\/ani\/mewtwo\.gif$/);
+assert.equal(generator.getFinalToneDelay("Uber") - generator.getFinalToneDelay("OU"), 750);
+assert.equal(generator.getFinalToneDelay("UU"), generator.getFinalToneDelay("OU"));
 
 // All selectable ceilings and modes must yield six eligible, distinct Pokemon.
 for (const [poolName, pool] of Object.entries(generator.datasets)) {
@@ -114,7 +131,7 @@ const weightedUberTotal = bananza.filter(pokemon => pokemon.tier === "Uber")
     .reduce((sum, pokemon) => sum + generator.getPokemonPullWeight(pokemon), 0);
 const forcedTeam = generator.generateTeam(bananza, "Uber", "++");
 assert.equal(forcedTeam[0].sourceTier, "AG");
-assert.ok(Math.abs(forcedTeam[0].pullProbability - 0.07 / weightedUberTotal) < 1e-12);
+assert.ok(Math.abs(forcedTeam[0].pullProbability - 0.07 * 0.10 / weightedUberTotal) < 1e-12);
 assert.equal(new Set(forcedTeam.map(pokemon => pokemon.id)).size, 6);
 seededMath.random = random;
 
