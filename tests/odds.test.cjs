@@ -13,6 +13,7 @@ function element(id) {
         elements.set(id, {
             value: "",
             addEventListener() {},
+            blur() {},
             classList: { add() {}, remove() {} },
             style: { setProperty() {} },
             setAttribute() {}
@@ -61,7 +62,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getSpecialPresentation, getPreviewPokemon, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -88,9 +89,9 @@ for (const tier of ["UU", "RU", "NU", "PU", "ZU"]) {
 }
 
 assert.equal(generator.getPokemonPullWeight({ id: "zaciancrowned", tier: "Uber", usageModifier: 1 }), 0.5);
-assert.equal(generator.getPokemonPullWeight({ id: "kyogre", tier: "Uber", usageModifier: 0.85 }), 0.425);
+assert.equal(generator.getPokemonPullWeight({ id: "kyogreprimal", tier: "Uber", usageModifier: 0.85 }), 0.425);
 assert.equal(generator.getRarityCategory({ id: "zaciancrowned", sourceTier: "AG", tier: "Uber" }).multiplier, 0.1);
-assert.equal(generator.getRarityCategory({ id: "kyogreprimal", tier: "Uber" }).multiplier, 1);
+assert.equal(generator.getRarityCategory({ id: "kyogre", tier: "Uber" }).multiplier, 1);
 generator.RARE_OU_POKEMON.add("example");
 assert.equal(generator.getPokemonPullWeight({ id: "example", tier: "OU", usageModifier: 1 }), 0.75);
 assert.equal(generator.getPokemonPullWeight({ id: "example", tier: "UU", usageModifier: 1 }), 1);
@@ -144,7 +145,7 @@ for (let index = 0; index < 3; index++) {
 generator.renderTeam([
     { id: "electrode", name: "Electrode", tier: "RU", generation: 9, pullProbability: 1 / 1763 },
     { id: "zapdos", name: "Zapdos", tier: "OU", generation: 9, pullProbability: 1 / 234 },
-    { id: "kyogre", name: "Kyogre", tier: "Uber", generation: 9, pullProbability: 1 / 500 }
+    { id: "kyogreprimal", name: "Kyogre-Primal", tier: "Uber", generation: 9, pullProbability: 1 / 500 }
 ]);
 assert.ok(!cards[0].innerHTML.includes("pokemon-pull-rarity"));
 assert.ok(cards[1].innerHTML.includes("pokemon-pull-rarity rarity-rare"));
@@ -154,6 +155,28 @@ assert.ok(cards[2].innerHTML.includes("Featured rare Uber"));
 assert.ok(cards[2].innerHTML.includes("Rare · 1 in 500"));
 assert.equal((cards[2].innerHTML.match(/Featured rare Uber/g) || []).length, 1);
 cards.length = 0;
+
+// Exact forms, all Arceus types, and generation-dependent tier colors.
+assert.equal(generator.FEATURED_RARE_UBERS.size, 38);
+assert.equal(generator.RARE_OU_POKEMON.size, 6);
+for (const id of generator.FEATURED_RARE_UBERS) {
+    assert.ok(Object.values(generator.datasets).some(pool => pool.some(p => p.id === id)), `Unknown featured form: ${id}`);
+    assert.equal(generator.getSpecialPresentation({ id, tier: "Uber" }).color, "#DF00FF");
+    assert.equal(generator.getPokemonPullWeight({ id, tier: "Uber", usageModifier: 1 }), 0.5);
+}
+for (const id of generator.RARE_OU_POKEMON) {
+    assert.equal(generator.getSpecialPresentation({ id, tier: "OU" }).color, "#800020");
+    assert.equal(generator.getPokemonPullWeight({ id, tier: "OU", usageModifier: 1 }), 0.75);
+}
+for (const id of ["kyogre", "groudon", "mewtwo", "rayquazamega", "garchompmega", "ogerponhearthflame"]) {
+    assert.equal(generator.getSpecialPresentation({ id, tier: "Uber" }), null);
+}
+assert.equal(generator.getSpecialPresentation({ id: "garchomp", tier: "Uber" }).color, "#DF00FF");
+assert.equal(generator.getSpecialPresentation({ id: "spectrier", tier: "OU" }).color, "#800020");
+assert.equal(generator.getSpecialPresentation({ id: "garchomp", tier: "UU" }), null);
+assert.equal(generator.getRarityCategory({ id: "arceus", tier: "Uber", sourceTier: "AG" }).multiplier, 0.1);
+assert.equal(generator.getPreviewPokemon([{id:"mewtwo",tier:"Uber"},{id:"zacian",tier:"Uber"}]).id, "zacian");
+assert.equal(generator.getPreviewPokemon([{id:"garchomp",tier:"OU"},{id:"mewtwo",tier:"Uber"}]).id, "mewtwo");
 
 // All selectable ceilings and modes must yield six eligible, distinct Pokemon.
 for (const [poolName, pool] of Object.entries(generator.datasets)) {
@@ -220,3 +243,53 @@ if (process.argv.includes("--simulate")) {
         teamsWithUberPercentage: result.teamsWithUberPercentage
     }, null, 2));
 }
+
+// Exercise the full reveal lifecycle in both motion modes, including transitions
+// from a featured pull to an ordinary one. No browser or audio hardware needed.
+(async () => {
+    const overlay = element("reveal-overlay");
+    let classes = new Set();
+    Object.defineProperty(overlay, "className", {
+        get: () => [...classes].join(" "),
+        set: value => { classes = new Set(value.split(/\s+/)); }
+    });
+    overlay.classList = { add: (...values) => values.forEach(value => classes.add(value)), remove: (...values) => values.forEach(value => classes.delete(value)) };
+    const properties = {};
+    overlay.style.setProperty = (name, value) => { properties[name] = value; };
+    context.window = { matchMedia: () => ({ matches: context.reducedMotion }) };
+    context.revealSnapshots = [];
+    context.oscillatorFrequencies = [];
+    context.takeSnapshot = () => context.revealSnapshots.push({
+        classes: overlay.className, color: properties["--reveal-color"],
+        label: element("reveal-special-label").textContent
+    });
+    vm.runInContext(`
+        sleep = async () => {};
+        waitForContinue = async () => takeSnapshot();
+        prepareAudio = () => {};
+        audioContext = {
+            state: "running", currentTime: 0, destination: {},
+            createOscillator() { return { frequency: { setValueAtTime(value) { oscillatorFrequencies.push(value); } }, connect() {}, start() {}, stop() {}, disconnect() {} }; },
+            createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
+        };
+    `, context);
+    for (const reduced of [false, true]) {
+        context.reducedMotion = reduced;
+        for (const [id, tier, color, label, notes] of [
+            ["zaciancrowned", "Uber", "#DF00FF", "Featured rare Uber", 10],
+            ["garchomp", "OU", "#800020", "Rare OU", 9],
+            ["mewtwo", "Uber", null, "", 6]
+        ]) {
+            context.oscillatorFrequencies.length = 0;
+            context.preview = { id, name: id, generation: 9, tier, pullProbability: 0.00001 };
+            await vm.runInContext('playRevealSequence(preview.tier, preview)', context);
+            const snapshot = context.revealSnapshots.at(-1);
+            assert.equal(snapshot.label, label);
+            if (color) assert.equal(snapshot.color, color);
+            else assert.ok(!snapshot.classes.includes('special-'));
+            assert.equal(overlay.className, 'reveal-overlay');
+            assert.equal(context.oscillatorFrequencies.length, reduced ? 0 : notes);
+        }
+    }
+    console.log('PASS: curated reveal colors, normal/reduced-motion lifecycle, state reset, and distinct musical flourishes.');
+})().catch(error => { console.error(error); process.exitCode = 1; });

@@ -22,14 +22,14 @@ OU and Uber keep their existing individual usage adjustment. UU and lower are eq
 
 ## Individual rarity categories
 
-The reviewed category multipliers now apply within each tier. The Rare OU category is ready but has no members until the user supplies the list.
+The reviewed category multipliers now apply within each tier. The user-approved lists contain 38 Uber forms and six OU Pokémon; see `featured-pulls.md`. Listed Pokémon follow their actual pool tier when applying the 0.50× Uber or 0.75× OU modifier.
 
 | Category | Multiplier | Pokemon |
 | --- | ---: | --- |
 | AG | 0.10x | Calyrex-Shadow, Koraidon, Miraidon, Rayquaza-Mega, Xerneas; Bananza only |
-| Featured rare Ubers | 0.50x | Calyrex-Ice, Kyogre, Eternatus, Necrozma-Dusk-Mane, Zacian-Crowned |
+| Featured rare Ubers | 0.50x | 38 approved forms, including all 18 Arceus types (see `featured-pulls.md`) |
 | Other Ubers | 1.00x | Includes Ho-Oh |
-| Selected rare OU | 0.75x | Specific entries still need to be chosen |
+| Selected rare OU | 0.75x | Dragapult, Garchomp, Kingambit, Gholdengo, Ogerpon-Wellspring, Zamazenta |
 | Other OU | 1.00x | Remaining OU entries |
 | UU and lower | 1.00x | Equal within each tier |
 

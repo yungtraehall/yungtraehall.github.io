@@ -70,10 +70,10 @@ The final chime delay is 650 ms for lower tiers, 1,100 ms for UU/OU, and 1,350 m
 for Uber: Uber’s final tone arrives 250 ms later than UU/OU. Frequencies and the
 other reveal timing stay unchanged.
 
-The Featured rare Ubers are Calyrex-Ice, Kyogre, Eternatus,
-Necrozma-Dusk-Mane, and Zacian-Crowned (0.50×). AG takes precedence (0.10×,
-Bananza only). Rare OU is wired for a user-supplied exact-form list (0.75×).
-These affect selection within their tier and preserve the boosted tier odds.
+The approved featured lists and neon reveal treatment are documented in
+`featured-pulls.md`. Listed Pokémon use 0.50× within-tier weight when Uber,
+0.75× when OU, and the existing 0.10× AG weight when applicable. The broader
+OU/Uber tier probabilities are preserved.
 
 Rarity presentation uses the original colored probability badges: Rare (≤1%),
 Very Rare (≤0.1%), and Extremely Rare (≤0.01%), alongside “1 in …” odds.
@@ -81,4 +81,4 @@ Only OU, Uber, and AG can show these badges, on cards and above the reveal orb.
 UU and below show no rarity or individual-odds line. Qualifying Pokémon above
 1% keep the original behavior of showing no badge. Curated categories remain
 separate from displayed rarity and continue to set within-tier selection weights.
-The supplied Uber/OU lists can update the curated group membership.
+The approved Uber/OU lists now control curated group membership.
