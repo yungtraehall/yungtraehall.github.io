@@ -6,6 +6,7 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const tiers = ["ZU", "PU", "NU", "RU", "UU", "OU", "Uber"];
 const elements = new Map();
+const cards = [];
 
 function element(id) {
     if (!elements.has(id)) {
@@ -41,7 +42,7 @@ seededMath.random = function () {
 const context = vm.createContext({
     document: {
         getElementById: element,
-        querySelectorAll: () => [],
+        querySelectorAll: () => cards,
         body: { classList: { add() {}, remove() {} } }
     },
     Math: seededMath,
@@ -60,7 +61,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getPullOddsText, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -100,8 +101,45 @@ for (let gen = 1; gen <= 4; gen++) {
 }
 assert.match(generator.getPokemonSpriteUrls("Mewtwo", 5)[0], /gen5ani\/mewtwo\.gif$/);
 assert.match(generator.getPokemonSpriteUrls("Mewtwo", 9)[0], /sprites\/ani\/mewtwo\.gif$/);
-assert.equal(generator.getFinalToneDelay("Uber") - generator.getFinalToneDelay("OU"), 750);
+assert.equal(generator.getFinalToneDelay("Uber") - generator.getFinalToneDelay("OU"), 250);
 assert.equal(generator.getFinalToneDelay("UU"), generator.getFinalToneDelay("OU"));
+
+// Screenshot regression: a crowded RU pool gave Electrode a smaller individual
+// probability than OU Zapdos. Neither ordinary Pokémon gets a rarity badge.
+assert.equal(generator.getRarityDetails({ id: "electrode", tier: "RU", pullProbability: 1 / 1763 }), null);
+assert.equal(generator.getRarityDetails({ id: "zapdos", tier: "OU", pullProbability: 1 / 234 }), null);
+assert.equal(generator.getPullOddsText(1 / 1763), "Pull odds this slot: 1 in 1,763");
+assert.equal(generator.getPullOddsText(1 / 234), "Pull odds this slot: 1 in 234");
+assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", pullProbability: 0.1 }).label, "Featured rare Uber");
+assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", pullProbability: 0.00001 }).label, "Featured rare Uber");
+assert.equal(generator.getRarityDetails({ id: "miraidon", tier: "Uber", sourceTier: "AG" }).label, "Rare AG");
+generator.RARE_OU_POKEMON.add("zapdos");
+assert.equal(generator.getRarityDetails({ id: "zapdos", tier: "OU" }).label, "Rare OU");
+assert.equal(generator.getRarityDetails({ id: "zapdos", tier: "UU" }), null);
+generator.RARE_OU_POKEMON.delete("zapdos");
+for (const probability of [undefined, null, NaN, Infinity, 0, -1, 2]) {
+    assert.equal(generator.getPullOddsText(probability), "");
+}
+
+// Render the reported examples using the real card renderer, not a copy of it.
+for (let index = 0; index < 3; index++) {
+    const image = {};
+    cards.push({ innerHTML: "", classList: { add() {}, remove() {} },
+        querySelector(selector) { return selector === ".pokemon-sprite" ? image : { addEventListener() {} }; }
+    });
+}
+generator.renderTeam([
+    { id: "electrode", name: "Electrode", tier: "RU", generation: 9, pullProbability: 1 / 1763 },
+    { id: "zapdos", name: "Zapdos", tier: "OU", generation: 9, pullProbability: 1 / 234 },
+    { id: "kyogre", name: "Kyogre", tier: "Uber", generation: 9, pullProbability: 1 / 500 }
+]);
+assert.ok(!cards[0].innerHTML.includes("pokemon-pull-rarity"));
+assert.ok(!cards[1].innerHTML.includes("pokemon-pull-rarity"));
+assert.ok(cards[0].innerHTML.includes("Pull odds this slot: 1 in 1,763"));
+assert.ok(cards[1].innerHTML.includes("Pull odds this slot: 1 in 234"));
+assert.ok(cards[2].innerHTML.includes("Featured rare Uber"));
+assert.equal((cards[2].innerHTML.match(/Featured rare Uber/g) || []).length, 1);
+cards.length = 0;
 
 // All selectable ceilings and modes must yield six eligible, distinct Pokemon.
 for (const [poolName, pool] of Object.entries(generator.datasets)) {
@@ -144,7 +182,7 @@ element("pool-select").value = "gen9";
 generator.updateTierAvailability();
 assert.equal(element("maximum-tier-setting").hidden, false);
 
-console.log("PASS: profiles, OU/Uber usage weights, equal lower-tier weights, all pools/ceilings/modes, duplicate prevention, exact AG probability, and Bananza ceiling handling.");
+console.log("PASS: profiles, OU/Uber usage weights, equal lower-tier weights, all pools/ceilings/modes, duplicate prevention, exact AG probability, Bananza ceiling handling, screenshot rarity regression, card labels, and Uber chime delay.");
 
 if (process.argv.includes("--simulate")) {
     const result = generator.simulateTeams(100000);
