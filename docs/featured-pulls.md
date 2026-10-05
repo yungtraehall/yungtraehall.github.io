@@ -29,7 +29,8 @@ Dragapult, Garchomp, Kingambit, Gholdengo, Ogerpon-Wellspring, Zamazenta.
 
 - Listed pulls have a matching tier badge, category label, colored card border,
   and neon glow. Probability-based rarity labels still appear only at OU and
-  above, using the previous thresholds and numerical odds.
+  above, using the previous thresholds against the OU+ pool comparison. Numbers
+  are labelled “among OU+ pulls” and exclude every lower tier.
 - The reveal has a neon frame, a single expanding halo, a colored sprite glow,
   and a featured label. The odds stay above the orb with space above the label.
 - Uber gets a four-note ascending flourish; OU gets a softer three-note flourish.
