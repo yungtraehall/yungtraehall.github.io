@@ -75,9 +75,10 @@ Necrozma-Dusk-Mane, and Zacian-Crowned (0.50×). AG takes precedence (0.10×,
 Bananza only). Rare OU is wired for a user-supplied exact-form list (0.75×).
 These affect selection within their tier and preserve the boosted tier odds.
 
-Rarity presentation separates curated categories from exact pull odds. Standard
-Pokémon show their tier and neutral “Pull odds this slot: 1 in …” text. Only
-Featured rare Ubers, selected Rare OU, and AG receive special badges, both on the
-cards and above the reveal orb. A large lower-tier pool cannot assign an ordinary
-Pokémon a “Very Rare” label. Numeric probabilities and generator weights remain
-unchanged. The supplied Uber/OU lists can update the curated group membership.
+Rarity presentation uses the original colored probability badges: Rare (≤1%),
+Very Rare (≤0.1%), and Extremely Rare (≤0.01%), alongside “1 in …” odds.
+Only OU, Uber, and AG can show these badges, on cards and above the reveal orb.
+UU and below show no rarity or individual-odds line. Qualifying Pokémon above
+1% keep the original behavior of showing no badge. Curated categories remain
+separate from displayed rarity and continue to set within-tier selection weights.
+The supplied Uber/OU lists can update the curated group membership.
