@@ -363,25 +363,22 @@ async function generatePokemon() {
     =========================================
 */
 
-function getPullOddsText(probability) {
-    if (!Number.isFinite(probability) || probability <= 0 || probability > 1) return "";
-    return "Pull odds this slot: 1 in " + Math.round(1 / probability).toLocaleString();
-}
-
 function getRarityDetails(pokemon) {
-    // A crowded tier must not turn an ordinary lower-tier Pokémon into "Very Rare".
-    // Special badges follow the curated groups; numeric odds are shown separately.
-    const category = getRarityCategory(pokemon);
-    if (pokemon.sourceTier === "AG") {
-        return { label: "Rare AG", className: "rarity-extremely-rare" };
+    // Only OU and above display rarity; labels still use the actual slot odds.
+    if (pokemon.tier !== "OU" && pokemon.tier !== "Uber" && pokemon.sourceTier !== "AG") return null;
+    const probability = pokemon.pullProbability;
+    if (!Number.isFinite(probability) || probability <= 0 || probability > 1) return null;
+    let label, className;
+    if (probability <= 0.0001) {
+        label = "Extremely Rare"; className = "rarity-extremely-rare";
+    } else if (probability <= 0.001) {
+        label = "Very Rare"; className = "rarity-very-rare";
+    } else if (probability <= 0.01) {
+        label = "Rare"; className = "rarity-rare";
+    } else {
+        return null;
     }
-    if (category.label === "Featured rare Uber") {
-        return { label: category.label, className: "rarity-very-rare" };
-    }
-    if (category.label === "Rare OU") {
-        return { label: category.label, className: "rarity-rare" };
-    }
-    return null;
+    return { label, className, oddsText: "1 in " + Math.round(1 / probability).toLocaleString() };
 }
 
 function renderTeam(generatedPokemon) {
@@ -394,7 +391,6 @@ function renderTeam(generatedPokemon) {
         const tierLabel = pokemon.sourceTier === "AG" ? "AG" : pokemon.tier;
         const tierClass = "tier-" + tierLabel.toLowerCase();
         const rarity = getRarityDetails(pokemon);
-        const pullOdds = getPullOddsText(pokemon.pullProbability);
 
 
         /*
@@ -423,9 +419,9 @@ function renderTeam(generatedPokemon) {
             <div class="pokemon-tier ${tierClass}">
                 ${tierLabel}
             </div>
-            ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}">${rarity.label}</div>` : ""}
+            ${getRarityCategory(pokemon).label !== "Standard" ? `<div class="pokemon-category">${getRarityCategory(pokemon).label}</div>` : ""}
             <button class="pokemon-details-button" type="button" aria-label="Details for ${pokemon.name}">Details</button>
-            ${pullOdds ? `<div class="pokemon-pull-odds" title="Chance of this exact Pokémon in this slot, not the chance of its whole tier">${pullOdds}</div>` : ""}
+            ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}" title="Chance in this slot">${rarity.label} · ${rarity.oddsText}</div>` : ""}
         `;
 
         pokemonCards[i].querySelector(".pokemon-details-button").addEventListener("click", () => openPokemonDetails(pokemon));
@@ -691,10 +687,9 @@ async function playRevealSequence(
 
     revealPokemonName.textContent = previewPokemon.name;
     const previewRarity = getRarityDetails(previewPokemon);
-    const previewPullOdds = getPullOddsText(previewPokemon.pullProbability);
     const previewTierLabel = previewPokemon.sourceTier === "AG" ? "AG" : previewPokemon.tier;
     revealTierName.textContent = previewTierLabel;
-    revealPullChance.textContent = [previewRarity?.label, previewPullOdds].filter(Boolean).join(" · ");
+    revealPullChance.textContent = previewRarity ? previewRarity.label + " · " + previewRarity.oddsText + " chance in this slot" : "";
 
     setPokemonSpriteWithFallback(
         revealPreviewSprite,

@@ -1351,7 +1351,7 @@ body.reveal-active {
 }
 .pokemon-details-button:hover { background: #35496f; }
 .pokemon-details-button:focus-visible, #pokemon-details-close:focus-visible { outline: 3px solid #bcd5ff; outline-offset: 3px; }
-.pokemon-pull-odds { margin-top: 8px; color: #bdcbe3; font-size: 11px; line-height: 1.4; }
+.pokemon-category { margin-top: 8px; color: #ffe0a3; font-size: 0.78rem; }
 #pokemon-details-dialog {
     width: min(920px, calc(100vw - 28px));
     max-height: calc(100dvh - 36px);

@@ -61,7 +61,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getPullOddsText, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -104,22 +104,35 @@ assert.match(generator.getPokemonSpriteUrls("Mewtwo", 9)[0], /sprites\/ani\/mewt
 assert.equal(generator.getFinalToneDelay("Uber") - generator.getFinalToneDelay("OU"), 250);
 assert.equal(generator.getFinalToneDelay("UU"), generator.getFinalToneDelay("OU"));
 
-// Screenshot regression: a crowded RU pool gave Electrode a smaller individual
-// probability than OU Zapdos. Neither ordinary Pokémon gets a rarity badge.
-assert.equal(generator.getRarityDetails({ id: "electrode", tier: "RU", pullProbability: 1 / 1763 }), null);
-assert.equal(generator.getRarityDetails({ id: "zapdos", tier: "OU", pullProbability: 1 / 234 }), null);
-assert.equal(generator.getPullOddsText(1 / 1763), "Pull odds this slot: 1 in 1,763");
-assert.equal(generator.getPullOddsText(1 / 234), "Pull odds this slot: 1 in 234");
-assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", pullProbability: 0.1 }).label, "Featured rare Uber");
-assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", pullProbability: 0.00001 }).label, "Featured rare Uber");
-assert.equal(generator.getRarityDetails({ id: "miraidon", tier: "Uber", sourceTier: "AG" }).label, "Rare AG");
-generator.RARE_OU_POKEMON.add("zapdos");
-assert.equal(generator.getRarityDetails({ id: "zapdos", tier: "OU" }).label, "Rare OU");
-assert.equal(generator.getRarityDetails({ id: "zapdos", tier: "UU" }), null);
-generator.RARE_OU_POKEMON.delete("zapdos");
-for (const probability of [undefined, null, NaN, Infinity, 0, -1, 2]) {
-    assert.equal(generator.getPullOddsText(probability), "");
+// Keep probability-based colors and thresholds, restricted to OU and above.
+for (const tier of ["ZU", "PU", "NU", "RU", "UU"]) {
+    for (const pullProbability of [0.00001, 0.001, 0.01]) {
+        assert.equal(generator.getRarityDetails({ tier, pullProbability }), null);
+    }
 }
+for (const tier of ["OU", "Uber"]) {
+    for (const [pullProbability, label, className] of [
+        [0.0001, "Extremely Rare", "rarity-extremely-rare"],
+        [0.00010001, "Very Rare", "rarity-very-rare"],
+        [0.001, "Very Rare", "rarity-very-rare"],
+        [0.00100001, "Rare", "rarity-rare"],
+        [0.01, "Rare", "rarity-rare"]
+    ]) {
+        const rarity = generator.getRarityDetails({ tier, pullProbability });
+        assert.equal(rarity.label, label);
+        assert.equal(rarity.className, className);
+    }
+    for (const pullProbability of [undefined, null, NaN, Infinity, 0, -1, 2, 0.010001]) {
+        assert.equal(generator.getRarityDetails({ tier, pullProbability }), null);
+    }
+}
+assert.equal(generator.getRarityDetails({ id: "electrode", tier: "RU", pullProbability: 1 / 1763 }), null);
+const zapdosRarity = generator.getRarityDetails({ id: "zapdos", tier: "OU", pullProbability: 1 / 234 });
+assert.equal(zapdosRarity.label, "Rare");
+assert.equal(zapdosRarity.oddsText, "1 in 234");
+assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", pullProbability: 0.1 }), null);
+assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", pullProbability: 0.00001 }).label, "Extremely Rare");
+assert.equal(generator.getRarityDetails({ id: "miraidon", tier: "Uber", sourceTier: "AG", pullProbability: 0.00001 }).label, "Extremely Rare");
 
 // Render the reported examples using the real card renderer, not a copy of it.
 for (let index = 0; index < 3; index++) {
@@ -134,10 +147,11 @@ generator.renderTeam([
     { id: "kyogre", name: "Kyogre", tier: "Uber", generation: 9, pullProbability: 1 / 500 }
 ]);
 assert.ok(!cards[0].innerHTML.includes("pokemon-pull-rarity"));
-assert.ok(!cards[1].innerHTML.includes("pokemon-pull-rarity"));
-assert.ok(cards[0].innerHTML.includes("Pull odds this slot: 1 in 1,763"));
-assert.ok(cards[1].innerHTML.includes("Pull odds this slot: 1 in 234"));
+assert.ok(cards[1].innerHTML.includes("pokemon-pull-rarity rarity-rare"));
+assert.ok(!cards[0].innerHTML.includes("1 in 1,763"));
+assert.ok(cards[1].innerHTML.includes("Rare · 1 in 234"));
 assert.ok(cards[2].innerHTML.includes("Featured rare Uber"));
+assert.ok(cards[2].innerHTML.includes("Rare · 1 in 500"));
 assert.equal((cards[2].innerHTML.match(/Featured rare Uber/g) || []).length, 1);
 cards.length = 0;
 
