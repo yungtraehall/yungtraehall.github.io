@@ -391,6 +391,9 @@ function renderTeam(generatedPokemon) {
         const tierLabel = pokemon.sourceTier === "AG" ? "AG" : pokemon.tier;
         const tierClass = "tier-" + tierLabel.toLowerCase();
         const rarity = getRarityDetails(pokemon);
+        const special = getSpecialPresentation(pokemon);
+        pokemonCards[i].classList.remove("special-ou", "special-uber");
+        if (special) pokemonCards[i].classList.add(special.className);
 
 
         /*
@@ -511,8 +514,8 @@ function getHighestTier(team) {
 
 
 /*
-    Pick the first Pokémon belonging to the
-    strongest tier in the generated six.
+    Prefer a curated Pokémon within the strongest tier,
+    otherwise show the first Pokémon from that tier.
 
     This choice is deterministic and does not
     perform another random roll.
@@ -523,9 +526,8 @@ function getPreviewPokemon(team) {
     const highestTier =
         getHighestTier(team);
 
-    return team.find(function (pokemon) {
-        return pokemon.tier === highestTier;
-    });
+    const strongest = team.filter(pokemon => pokemon.tier === highestTier);
+    return strongest.find(pokemon => getSpecialPresentation(pokemon)) || strongest[0];
 
 }
 
@@ -641,6 +643,27 @@ function playRevealTone(frequency) {
 }
 
 
+function playSpecialFlourish(className) {
+    if (!audioContext || audioContext.state !== "running") return;
+    const notes = className === "special-uber" ? [523.25, 659.25, 783.99, 1046.5] : [392, 493.88, 587.33];
+    const now = audioContext.currentTime;
+    notes.forEach((frequency, index) => {
+        const start = now + index * 0.11;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.045, start + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.65);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+        oscillator.start(start);
+        oscillator.stop(start + 0.7);
+    });
+}
+
 function pulseRevealStage(pulseNumber) {
 
     revealOverlay.classList.remove(
@@ -687,6 +710,10 @@ async function playRevealSequence(
 
     revealPokemonName.textContent = previewPokemon.name;
     const previewRarity = getRarityDetails(previewPokemon);
+    const special = getSpecialPresentation(previewPokemon);
+    revealOverlay.className = "reveal-overlay";
+    if (special) revealOverlay.classList.add(special.className);
+    document.getElementById("reveal-special-label").textContent = special ? special.label : "";
     const previewTierLabel = previewPokemon.sourceTier === "AG" ? "AG" : previewPokemon.tier;
     revealTierName.textContent = previewTierLabel;
     revealPullChance.textContent = previewRarity ? previewRarity.label + " · " + previewRarity.oddsText + " chance in this slot" : "";
@@ -707,7 +734,7 @@ async function playRevealSequence(
 
         revealOverlay.style.setProperty(
             "--reveal-color",
-            revealTierColors[highestTier]
+            (special ? special.color : revealTierColors[highestTier])
         );
 
         revealTierName.textContent =
@@ -739,6 +766,8 @@ async function playRevealSequence(
             "true"
         );
 
+        revealOverlay.className = "reveal-overlay";
+        document.getElementById("reveal-special-label").textContent = "";
         revealPreviewSprite.src = "";
         revealPreviewSprite.alt = "";
         revealPreviewSprite.onerror = null;
@@ -757,9 +786,6 @@ async function playRevealSequence(
         Reset the overlay so every click starts from
         a completely clean animation state.
     */
-
-    revealOverlay.className =
-        "reveal-overlay";
 
     /*
         OU and Uber get their own premium reveal effects.
@@ -781,7 +807,7 @@ async function playRevealSequence(
 
     revealOverlay.style.setProperty(
         "--reveal-color",
-        revealTierColors[highestTier]
+        (special ? special.color : revealTierColors[highestTier])
     );
 
     revealOverlay.setAttribute(
@@ -854,6 +880,7 @@ async function playRevealSequence(
     revealOverlay.classList.add(
         "pokemon-revealed"
     );
+    if (special) playSpecialFlourish(special.className);
 
     await sleep(360);
 
@@ -1384,19 +1411,37 @@ function chooseTier(availablePokemon,pokemonPool,selectedTier,selectedOdds) {
 */
 
 const FEATURED_RARE_UBERS = new Set([
-    "calyrexice", "kyogre", "eternatus", "necrozmaduskmane", "zaciancrowned"
+    "groudonprimal", "zaciancrowned", "zacian", "zamazentacrowned", "solgaleo",
+    "necrozmaduskmane", "necrozmadawnwings", "necrozmaultra", "kyogreprimal",
+    "eternatus", "rayquaza", "blazikenmega", "lucariomega", "calyrexice",
+    "naganadel", "spectrier", "giratinaorigin", "gengarmega", "mewtwomegax", "mewtwomegay",
+    "arceus", ...["bug", "dark", "dragon", "electric", "fairy", "fighting", "fire",
+        "flying", "ghost", "grass", "ground", "ice", "poison", "psychic", "rock", "steel", "water"]
+        .map(type => "arceus" + type)
 ]);
-// Add the user-approved exact-form IDs here when the Rare OU list is supplied.
-const RARE_OU_POKEMON = new Set([]);
+const RARE_OU_POKEMON = new Set([
+    "dragapult", "garchomp", "kingambit", "gholdengo", "ogerponwellspring", "zamazenta"
+]);
+
+function isFeaturedPokemon(pokemon) {
+    return FEATURED_RARE_UBERS.has(pokemon.id) || RARE_OU_POKEMON.has(pokemon.id);
+}
+
+function getSpecialPresentation(pokemon) {
+    if (!isFeaturedPokemon(pokemon)) return null;
+    if (pokemon.tier === "Uber" || pokemon.sourceTier === "AG") {
+        return { className: "special-uber", color: "#DF00FF", label: pokemon.sourceTier === "AG" ? "Featured AG" : "Featured rare Uber" };
+    }
+    if (pokemon.tier === "OU") {
+        return { className: "special-ou", color: "#800020", label: "Rare OU" };
+    }
+    return null;
+}
 
 function getRarityCategory(pokemon) {
     if (pokemon.sourceTier === "AG") return { label: "Anything Goes", multiplier: 0.10 };
-    if (pokemon.tier === "Uber" && FEATURED_RARE_UBERS.has(pokemon.id)) {
-        return { label: "Featured rare Uber", multiplier: 0.50 };
-    }
-    if (pokemon.tier === "OU" && RARE_OU_POKEMON.has(pokemon.id)) {
-        return { label: "Rare OU", multiplier: 0.75 };
-    }
+    const special = getSpecialPresentation(pokemon);
+    if (special) return { label: special.label, multiplier: pokemon.tier === "Uber" ? 0.50 : 0.75 };
     return { label: "Standard", multiplier: 1.00 };
 }
 

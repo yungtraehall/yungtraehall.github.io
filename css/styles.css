@@ -1381,3 +1381,67 @@ body.reveal-active {
 .details-table small { display: block; margin-top: 5px; }
 #pokemon-details-dialog a { color: #a9cdff; }
 @media (max-width: 600px) { #pokemon-details-dialog { padding: 16px; } }
+
+/* Curated pulls: exact category colors, with lighter neon highlights for contrast. */
+.special-uber { --special-color: #DF00FF; --special-neon: #f073ff; --special-text: #f9c7ff; }
+.special-ou { --special-color: #800020; --special-neon: #ff3971; --special-text: #ffd2de; }
+.pokemon-card:is(.special-ou, .special-uber) {
+    border: 2px solid var(--special-color);
+    background: linear-gradient(155deg, color-mix(in srgb, var(--special-color) 18%, #24282e), #1d2025 75%);
+    box-shadow: 0 0 13px color-mix(in srgb, var(--special-neon) 55%, transparent), inset 0 0 24px color-mix(in srgb, var(--special-color) 15%, transparent);
+}
+.pokemon-card:is(.special-ou, .special-uber):hover { border-color: var(--special-neon); }
+:is(.special-ou, .special-uber) .pokemon-tier,
+:is(.special-ou, .special-uber) .reveal-tier-name {
+    background: var(--special-color); color: #fff; border: 1px solid var(--special-neon);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--special-neon) 45%, transparent);
+}
+:is(.special-ou, .special-uber) .pokemon-category { color: var(--special-text); letter-spacing: .04em; }
+:is(.special-ou, .special-uber) .pokemon-pull-rarity {
+    color: var(--special-text); border-color: var(--special-neon);
+    background: color-mix(in srgb, var(--special-color) 28%, #1d2025);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--special-neon) 25%, transparent);
+}
+.special-reveal-frame, .special-reveal-halo, .reveal-special-label { opacity: 0; pointer-events: none; position: absolute; }
+.special-reveal-frame {
+    z-index: 1; inset: 20% 8% 15%; border: 2px solid var(--special-color); border-radius: 28px;
+    background: linear-gradient(150deg, color-mix(in srgb, var(--special-color) 12%, transparent), transparent 65%);
+    box-shadow: 0 0 12px var(--special-color), 0 0 38px color-mix(in srgb, var(--special-neon) 40%, transparent), inset 0 0 28px color-mix(in srgb, var(--special-color) 20%, transparent);
+    transition: opacity .5s ease;
+}
+.special-reveal-halo {
+    z-index: 2; width: 52%; aspect-ratio: 1; top: 43%; left: 50%; border: 1px solid var(--special-neon); border-radius: 50%;
+    transform: translate(-50%, -50%); box-shadow: 0 0 22px var(--special-color);
+}
+.reveal-special-label {
+    z-index: 6; top: 16%; left: 5%; width: 90%; text-align: center;
+    color: var(--special-text); font-size: clamp(12px, 3vw, 15px); font-weight: 800;
+    letter-spacing: .12em; text-transform: uppercase; text-shadow: 0 0 14px var(--special-color);
+}
+.reveal-overlay:is(.special-ou, .special-uber).rarity-revealed .special-reveal-frame { opacity: 1; }
+.reveal-overlay:is(.special-ou, .special-uber).pokemon-revealed .reveal-special-label { opacity: 1; }
+.reveal-overlay:is(.special-ou, .special-uber).pokemon-revealed .special-reveal-halo { animation: special-halo 1.3s ease-out both; }
+.reveal-overlay:is(.special-ou, .special-uber) .reveal-pull-chance { color: var(--special-text); text-shadow: 0 0 14px var(--special-color); }
+.reveal-overlay:is(.special-ou, .special-uber).rarity-extremely-rare .reveal-orb {
+    background: color-mix(in srgb, var(--special-color) 15%, transparent);
+    box-shadow: 0 0 45px var(--special-color), inset 0 0 30px rgba(255,255,255,.12);
+}
+.reveal-overlay:is(.special-ou, .special-uber).rarity-revealed .reveal-preview-sprite {
+    filter: brightness(0) drop-shadow(0 0 12px var(--special-neon)) drop-shadow(0 0 40px var(--special-color));
+}
+.reveal-overlay.pokemon-revealed.rarity-extremely-rare .reveal-preview-sprite {
+    filter: brightness(1) drop-shadow(0 0 18px #fff0bb) drop-shadow(0 0 46px #e9b83f);
+}
+.reveal-overlay:is(.special-ou, .special-uber).pokemon-revealed .reveal-preview-sprite {
+    filter: brightness(1) drop-shadow(0 0 14px var(--special-neon)) drop-shadow(0 0 38px var(--special-color));
+}
+@keyframes special-halo {
+    0% { opacity: .8; transform: translate(-50%, -50%) scale(.75); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.65); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .special-reveal-frame, .special-reveal-halo, .reveal-special-label { animation: none !important; transition: none !important; }
+    .special-reveal-halo { display: none; }
+}
+.special-uber .pokemon-tier, .special-uber .reveal-tier-name { color: #210025; }
+.reveal-overlay:is(.special-ou, .special-uber) .reveal-pull-chance { top: 3%; }
