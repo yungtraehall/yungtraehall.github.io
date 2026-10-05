@@ -79,6 +79,12 @@ Rarity presentation uses the original colored probability badges: Rare (≤1%),
 Very Rare (≤0.1%), and Extremely Rare (≤0.01%), alongside “1 in …” odds.
 Only OU, Uber, and AG can show these badges, on cards and above the reveal orb.
 UU and below show no rarity or individual-odds line. Qualifying Pokémon above
-1% keep the original behavior of showing no badge. Curated categories remain
+1% show their OU+ comparison number without a qualitative rarity label. Curated categories remain
 separate from displayed rarity and continue to set within-tier selection weights.
 The approved Uber/OU lists now control curated group membership.
+
+The displayed numbers compare only eligible OU, Rare OU, Uber, Rare Uber, and
+AG Pokémon in the selected pool, maximum tier, and odds setting. They use the
+full pool before team exclusions. Lower tiers do not contribute. The cards and
+reveal explicitly say “among OU+ pulls”; actual all-tier roll chances are kept
+separately. See `odds-balancing.md` for the formula and Mewtwo examples.

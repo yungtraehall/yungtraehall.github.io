@@ -18,7 +18,13 @@ This replaces the original baseline plus exponential strength modifier, which ga
 
 Lower maximum tiers remove stronger tier weights and normalize the remaining weights. A tier absent from the pool folds into the nearest weaker tier, or the nearest stronger tier if none exists below it. This preserves the previous handling of historical and Champions pools. A tier exhausted by selecting its last member rebalances among remaining tiers. Teams still contain six distinct Pokemon/forms.
 
-OU and Uber keep their existing individual usage adjustment. UU and lower are equal within their tiers. The tier increase therefore also increases the current individual OU and Uber chances. Rarity badges use the actual conditional chance for the slot, including removal of previous picks, and are displayed only for OU, Uber, and AG. The original colored presentation is restored: Rare at ≤1%, Very Rare at ≤0.1%, and Extremely Rare at ≤0.01%. UU and below show no rarity label or individual-odds line. Curated rarity categories continue to affect within-tier weights independently of the probability-based display.
+OU and Uber keep their existing individual usage adjustment. UU and lower are equal within their tiers. The tier increase therefore also increases the current individual OU and Uber chances. Displayed rarity compares the Pokémon only with eligible OU-and-above Pokémon in the selected pool and settings. It uses the full eligible pool before any team exclusions, so the same Pokémon has a stable number throughout a roll. Lower-tier species counts, weights, missing tiers, and previously drawn Pokémon do not enter this calculation. Displayed numbers are explicitly labelled “among OU+ pulls”; they are not the chance on any roll.
+
+The display calculation is `(tier profile weight / sum of present eligible OU+ tier profile weights) × (Pokémon weight / sum of Pokémon weights in its tier)`. Rare OU and Rare Uber keep their within-tier multipliers; AG remains inside Uber with its 0.10× multiplier. Maximum Tier and Odds settings apply. Pools with no eligible OU+ members have no comparison numbers.
+
+Rare (≤1%), Very Rare (≤0.1%), and Extremely Rare (≤0.01%) colors now use this upper-pool probability. Above 1%, an OU+ Pokémon still shows its comparison number without a qualitative rarity label. UU and below show neither. The separate `pullProbability` field retains the actual slot chance for the unchanged generator; `upperPoolProbability` supplies only the displayed comparison.
+
+For Mewtwo at Uber++, the baseline comparisons are approximately 1 in 15 in Gen 1, 1 in 479 in National Dex, and 1 in 482 in Bananza, among OU+ pulls.
 
 ## Individual rarity categories
 

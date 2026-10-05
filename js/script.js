@@ -364,9 +364,9 @@ async function generatePokemon() {
 */
 
 function getRarityDetails(pokemon) {
-    // Only OU and above display rarity; labels still use the actual slot odds.
+    // Display a pool-specific comparison among eligible OU+ Pokémon.
     if (pokemon.tier !== "OU" && pokemon.tier !== "Uber" && pokemon.sourceTier !== "AG") return null;
-    const probability = pokemon.pullProbability;
+    const probability = pokemon.upperPoolProbability;
     if (!Number.isFinite(probability) || probability <= 0 || probability > 1) return null;
     let label, className;
     if (probability <= 0.0001) {
@@ -376,9 +376,12 @@ function getRarityDetails(pokemon) {
     } else if (probability <= 0.01) {
         label = "Rare"; className = "rarity-rare";
     } else {
-        return null;
+        label = ""; className = "rarity-standard";
     }
-    return { label, className, oddsText: "1 in " + Math.round(1 / probability).toLocaleString() };
+    const oddsText = "1 in " + Math.round(1 / probability).toLocaleString();
+    return { label, className, oddsText,
+        displayText: (label ? label + " · " : "") + oddsText + " among OU+ pulls" };
+
 }
 
 function renderTeam(generatedPokemon) {
@@ -424,7 +427,7 @@ function renderTeam(generatedPokemon) {
             </div>
             ${getRarityCategory(pokemon).label !== "Standard" ? `<div class="pokemon-category">${getRarityCategory(pokemon).label}</div>` : ""}
             <button class="pokemon-details-button" type="button" aria-label="Details for ${pokemon.name}">Details</button>
-            ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}" title="Chance in this slot">${rarity.label} · ${rarity.oddsText}</div>` : ""}
+            ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}" title="Comparison within the eligible OU-and-above pool at the selected odds setting, before team exclusions. Not the chance on any roll.">${rarity.displayText}</div>` : ""}
         `;
 
         pokemonCards[i].querySelector(".pokemon-details-button").addEventListener("click", () => openPokemonDetails(pokemon));
@@ -716,7 +719,7 @@ async function playRevealSequence(
     document.getElementById("reveal-special-label").textContent = special ? special.label : "";
     const previewTierLabel = previewPokemon.sourceTier === "AG" ? "AG" : previewPokemon.tier;
     revealTierName.textContent = previewTierLabel;
-    revealPullChance.textContent = previewRarity ? previewRarity.label + " · " + previewRarity.oddsText + " chance in this slot" : "";
+    revealPullChance.textContent = previewRarity ? previewRarity.displayText : "";
 
     setPokemonSpriteWithFallback(
         revealPreviewSprite,
@@ -1213,6 +1216,22 @@ function setPokemonSpriteWithFallback(
     =========================================
 */
 
+function getUpperPoolProbabilities(pokemonPool, selectedTier, selectedOdds) {
+    const ceiling = tierOrder.indexOf(selectedTier);
+    const profile = tierOddsProfiles[selectedOdds] || tierOddsProfiles["="];
+    const candidates = pokemonPool.filter(pokemon =>
+        (pokemon.tier === "OU" || pokemon.tier === "Uber") && tierOrder.indexOf(pokemon.tier) <= ceiling);
+    const totals = { OU: 0, Uber: 0 };
+    candidates.forEach(pokemon => { totals[pokemon.tier] += getPokemonPullWeight(pokemon); });
+    // Normalize only the upper-tier profile weights. Lower-tier weights, sizes,
+    // missing tiers, and earlier team picks cannot affect this display benchmark.
+    const totalTierWeight = ["OU", "Uber"].reduce((sum, tier) => sum + (totals[tier] ? profile[tier] : 0), 0);
+    const probabilities = new Map();
+    candidates.forEach(pokemon => probabilities.set(pokemon.id,
+        profile[pokemon.tier] / totalTierWeight * getPokemonPullWeight(pokemon) / totals[pokemon.tier]));
+    return probabilities;
+}
+
 function generateTeam(
     pokemonPool,
     selectedTier,
@@ -1250,6 +1269,7 @@ function generateTeam(
         [...eligiblePokemon];
 
     const generatedPokemon = [];
+    const upperPoolProbabilities = getUpperPoolProbabilities(pokemonPool, selectedTier, selectedOdds);
 
 
     /*
@@ -1300,7 +1320,10 @@ function generateTeam(
 
 
         const pokemonWeightTotal = pokemonInTier.reduce((total, pokemon) => total + getPokemonPullWeight(pokemon), 0);
-        generatedPokemon.push({ ...selectedPokemon, pullProbability: rolledTierChance * getPokemonPullWeight(selectedPokemon) / pokemonWeightTotal });
+        generatedPokemon.push({ ...selectedPokemon,
+            pullProbability: rolledTierChance * getPokemonPullWeight(selectedPokemon) / pokemonWeightTotal,
+            upperPoolProbability: upperPoolProbabilities.get(selectedPokemon.id) ?? null
+        });
 
 
         /*
