@@ -30,15 +30,15 @@ const tierOrder = [
 
     A lower Maximum Tier removes stronger tiers and rebalances the rest.
     Structurally absent tiers fold into the nearest available tier, as before.
-    ++ targets 7% Uber, 38% OU, and only 3% combined PU/ZU.
+    ++ targets 7% Uber, 37.9% OU, and only 3% combined PU/ZU.
 */
 
 const tierOddsProfiles = {
-    "--": { ZU: 18, PU: 20, NU: 22, RU: 20, UU: 12, OU: 7, Uber: 1 },
-    "-":  { ZU: 12, PU: 16, NU: 20, RU: 21, UU: 18, OU: 11.5, Uber: 1.5 },
-    "=":  { ZU: 6, PU: 10, NU: 16, RU: 22, UU: 21, OU: 22.5, Uber: 2.5 },
-    "+":  { ZU: 3, PU: 6, NU: 12, RU: 21, UU: 23, OU: 30.5, Uber: 4.5 },
-    "++": { ZU: 1, PU: 2, NU: 9, RU: 18, UU: 25, OU: 38, Uber: 7 }
+    "--": { ZU: 18, PU: 20, NU: 22, RU: 20, UU: 12.5, OU: 6.5, Uber: 1 },
+    "-":  { ZU: 12, PU: 16, NU: 20, RU: 21, UU: 18.75, OU: 10.75, Uber: 1.5 },
+    "=":  { ZU: 6, PU: 10, NU: 16, RU: 22, UU: 22, OU: 21.5, Uber: 2.5 },
+    "+":  { ZU: 3, PU: 6, NU: 12, RU: 21, UU: 23.5, OU: 30, Uber: 4.5 },
+    "++": { ZU: 1, PU: 2, NU: 9, RU: 18, UU: 25.1, OU: 37.9, Uber: 7 }
 };
 
 
@@ -383,7 +383,6 @@ async function generatePokemon() {
 
 function getRarityDetails(pokemon) {
     // Show the actual chance at this draw, rather than an OU+ comparison.
-    if (pokemon.tier !== "OU" && pokemon.tier !== "Uber" && pokemon.sourceTier !== "AG") return null;
     const probability = pokemon.pullProbability;
     if (!Number.isFinite(probability) || probability <= 0 || probability > 1) return null;
     let label, className;
@@ -788,15 +787,23 @@ async function playRevealSequence(
     revealOverlay.style.setProperty("--special-color", revealColor);
     revealOverlay.style.setProperty(
         "--special-neon",
+        special?.className === "special-ag" ? "#ffd670" :
         special?.className === "special-ou" ? "#ff3971" :
             (special ? "#f073ff" : (highestTier === "Uber" ? "#d5a7ff" : "#ff8a78"))
     );
     revealOverlay.style.setProperty(
         "--special-text",
+        special?.className === "special-ag" ? "#ffe7a6" :
         special?.className === "special-ou" ? "#ffd2de" :
             (special ? "#f9c7ff" : "#fff0fb")
     );
     const previewTierLabel = previewPokemon.sourceTier === "AG" ? "AG" : previewPokemon.tier;
+    const usageDetails = getRevealUsageDetails(previewPokemon);
+    const revealUsageRank = document.getElementById("reveal-usage-rank");
+    const revealUsagePercentage = document.getElementById("reveal-usage-percentage");
+    revealUsageRank.textContent = usageDetails.rankText;
+    revealUsagePercentage.textContent = usageDetails.percentageText;
+    document.getElementById("reveal-usage").setAttribute("title", usageDetails.description);
     revealTierName.textContent = previewTierLabel;
     revealPullChance.textContent = previewRarity ? previewRarity.displayText : "";
     revealPullChance.className = "reveal-pull-chance" + (previewRarity ? " " + previewRarity.className : "");
@@ -867,6 +874,8 @@ async function playRevealSequence(
         hologram.removeAttribute("src");
         revealPokemonName.textContent = "";
         revealPullChance.textContent = "";
+        revealUsageRank.textContent = "";
+        revealUsagePercentage.textContent = "";
 
         return;
 
@@ -1024,6 +1033,8 @@ async function playRevealSequence(
 
     revealPokemonName.textContent = "";
     revealPullChance.textContent = "";
+    revealUsageRank.textContent = "";
+    revealUsagePercentage.textContent = "";
     typeText.textContent = "";
     revealContinueButton.blur();
 
@@ -1527,7 +1538,7 @@ function isFeaturedPokemon(pokemon) {
 
 function getSpecialPresentation(pokemon) {
     if (pokemon.sourceTier === "AG") {
-        return { className: "special-ag", color: "#DF00FF", label: "Anything Goes" };
+        return { className: "special-ag", color: "#ffe7a6", label: "Anything Goes" };
     }
     if (!isFeaturedPokemon(pokemon)) return null;
     if (pokemon.tier === "Uber" || pokemon.sourceTier === "AG") {
@@ -1541,6 +1552,44 @@ function getSpecialPresentation(pokemon) {
 
 function getRevealTypes(pokemon) {
     return POKEMON_DETAILS_DATA[pokemon.id]?.modern.types || [];
+}
+
+function getRevealUsageDetails(pokemon) {
+    const tier = pokemon.sourceTier === "AG" ? "AG" : pokemon.tier;
+    const pool = pokemon.selectedPool || pokemon.format || "gen" + pokemon.generation;
+    const ladderSuffix = tier === "Uber" ? "ubers" : (tier === "AG" ? "anythinggoes" : tier.toLowerCase());
+    let ladder = "Gen" + pokemon.generation + tier;
+    let usage = null;
+    let period = "";
+    if (["nationaldex", "gen9nationaldex", "bananza"].includes(pool)) {
+        // Standard-generation usage would describe a different ladder.
+        ladder = (pool === "bananza" ? "Bananza " : "National Dex ") + tier;
+    } else if (["championsou", "gen9championsou"].includes(pool)) {
+        ladder = "Champions " + tier;
+        period = CHAMPIONS_OU_DATASET_META.usagePeriod;
+        if (tier === "OU" && pokemon.usageSource === "gen9championsou" && pokemon.usage?.recorded) {
+            usage = { rank: pokemon.usage.rank, pct: pokemon.usage.usagePct };
+        }
+    } else {
+        const entry = POKEMON_DETAILS_DATA[pokemon.id]?.history[pokemon.generation - 1];
+        const expectedFormat = "gen" + pokemon.generation + ladderSuffix;
+        if (entry?.usage?.format === expectedFormat) {
+            period = entry.usage.period;
+            if (entry.usage.status === "recorded") usage = entry.usage;
+        }
+        // A dataset fallback is valid only when its explicitly named ladder matches.
+        if (!usage && pokemon.usage?.recorded && (pokemon.usageSource || pokemon.format) === expectedFormat) {
+            usage = { rank: pokemon.usage.rank, pct: pokemon.usage.usagePct };
+        }
+    }
+    if (usage && Number.isFinite(usage.rank) && Number.isFinite(usage.pct)) {
+        return { rankText: "Rank #" + usage.rank + " · " + ladder,
+            percentageText: usage.pct.toFixed(3) + "% Usage" + (period ? " · " + period : ""),
+            description: "Recorded ladder usage for " + ladder + (period ? " in " + period : "") + ". This is separate from the generator's pull chance." };
+    }
+    return { rankText: "Usage unavailable · " + ladder,
+        percentageText: period ? "Snapshot · " + period : "No tier usage record",
+        description: "No published exact-form usage record for this pool and generated tier. Missing usage is not zero usage." };
 }
 
 function getRarityCategory(pokemon) {
