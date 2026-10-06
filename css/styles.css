@@ -1445,3 +1445,6 @@ body.reveal-active {
 }
 .special-uber .pokemon-tier, .special-uber .reveal-tier-name { color: #210025; }
 .reveal-overlay:is(.special-ou, .special-uber) .reveal-pull-chance { top: 3%; }
+
+#type-pool-setting[hidden] { display: none; }
+#type-pool-note { color: #bdcbe3; font-size: 12px; line-height: 1.4; max-width: 260px; }

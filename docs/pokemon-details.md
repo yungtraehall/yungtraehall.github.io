@@ -66,8 +66,8 @@ Gen 1–4 sprites use only the selected generation’s PNG directory. Gen 5 trie
 are tried within each era; a missing old asset is not replaced by a modern one.
 Official sprite directory: https://play.pokemonshowdown.com/sprites/
 
-The final chime delay is 650 ms for lower tiers, 1,100 ms for UU/OU, and 1,350 ms
-for Uber: Uber’s final tone arrives 250 ms later than UU/OU. Frequencies and the
+The final chime delay is 650 ms for UU and lower tiers, 1,100 ms for OU, and 1,350 ms
+for Uber: Uber’s final tone arrives 250 ms later than OU. Frequencies and the
 other reveal timing stay unchanged.
 
 The approved featured lists and neon reveal treatment are documented in

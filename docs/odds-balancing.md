@@ -24,18 +24,18 @@ The display calculation is `(tier profile weight / sum of present eligible OU+ t
 
 Rare (≤1%), Very Rare (≤0.1%), and Extremely Rare (≤0.01%) colors now use this upper-pool probability. Above 1%, an OU+ Pokémon still shows its comparison number without a qualitative rarity label. UU and below show neither. The separate `pullProbability` field retains the actual slot chance for the unchanged generator; `upperPoolProbability` supplies only the displayed comparison.
 
-For Mewtwo at Uber++, the baseline comparisons are approximately 1 in 15 in Gen 1, 1 in 479 in National Dex, and 1 in 482 in Bananza, among OU+ pulls.
+For Mewtwo at Uber++, the baseline comparisons are approximately 1 in 15 in Gen 1, 1 in 466 in National Dex, and 1 in 469 in Bananza, among OU+ pulls.
 
 ## Individual rarity categories
 
-The reviewed category multipliers now apply within each tier. The user-approved lists contain 38 Uber forms and six OU Pokémon; see `featured-pulls.md`. Listed Pokémon follow their actual pool tier when applying the 0.50× Uber or 0.75× OU modifier.
+The reviewed category multipliers now apply within each tier. The user-approved lists contain 42 Uber forms and nine OU Pokémon; see `featured-pulls.md`. Listed Pokémon follow their actual pool tier when applying the 0.50× Uber or 0.75× OU modifier.
 
 | Category | Multiplier | Pokemon |
 | --- | ---: | --- |
 | AG | 0.10x | Calyrex-Shadow, Koraidon, Miraidon, Rayquaza-Mega, Xerneas; Bananza only |
-| Featured rare Ubers | 0.50x | 38 approved forms, including all 18 Arceus types (see `featured-pulls.md`) |
+| Featured rare Ubers | 0.50x | 42 approved forms, including all 18 Arceus types (see `featured-pulls.md`) |
 | Other Ubers | 1.00x | Includes Ho-Oh |
-| Selected rare OU | 0.75x | Dragapult, Garchomp, Kingambit, Gholdengo, Ogerpon-Wellspring, Zamazenta |
+| Selected rare OU | 0.75x | Dragapult, Garchomp, Kingambit, Gholdengo, Ogerpon-Wellspring, Zamazenta, Volcarona, Kyurem, Raichu-Mega-Y |
 | Other OU | 1.00x | Remaining OU entries |
 | UU and lower | 1.00x | Equal within each tier |
 
