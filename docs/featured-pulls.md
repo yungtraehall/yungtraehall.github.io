@@ -35,6 +35,12 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
   are labelled “among OU+ pulls” and exclude every lower tier.
 - The reveal has a neon frame, a single expanding halo, a colored sprite glow,
   and a featured label. The odds stay above the orb with space above the label.
+- After the uploaded audio finishes, Rare OU opens a burgundy portal while its
+  exact Pokémon types appear as sigils; Featured rare Uber breaks through a
+  magenta crystal with expanding aura rings; and AG uses a larger magenta
+  shockwave and frame flash. The reveal waits for audio decoding and playback
+  before starting this payoff, so a slow initial download cannot make it fire
+  early.
 - Rare OU, any Uber (ordinary or featured), and AG play the user-supplied
   `audio/rare-reveal.wav` when the Pokémon appears. This replaces the synthesized
   flourishes. The 2.936-second WAV is copied unchanged from the latest attachment,
@@ -43,7 +49,8 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
   are cancelled on Continue. Ordinary OU and UU/below do not play the clip.
 - UU uses the normal 650 ms final-tone spacing. OU keeps 1,100 ms and Uber keeps
   1,350 ms (250 ms beyond OU).
-- Reduced motion uses a static frame and glow, with no halo or audio clip.
+- Reduced motion uses a static frame and glow, with no portal, crystal,
+  shockwave, or audio clip.
 - Within the strongest tier of the team, a listed Pokémon takes reveal priority.
   This is deterministic and does not reroll the team or alter its probabilities.
 - The reveal and card classes reset between pulls. The fully revealed sprite
