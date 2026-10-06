@@ -30,15 +30,17 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 ## Presentation
 
 - Listed pulls have a matching tier badge, category label, colored card border,
-  and neon glow. Probability-based rarity labels still appear only at OU and
-  above, using the previous thresholds against the OU+ pool comparison. Numbers
-  are labelled “among OU+ pulls” and exclude every lower tier.
+  and neon glow. Rarity labels still appear only at OU and above. The named
+  Rare OU/Uber categories have at least a Rare label, while AG has at least
+  Very Rare. The unchanged numeric thresholds may raise a label further. The
+  numbers are labelled “among OU+ pulls” and exclude every lower tier; category
+  minimums do not change the displayed probability or the actual roll odds.
 - The reveal has a neon frame, a single expanding halo, a colored sprite glow,
   and a featured label. The odds stay above the orb with space above the label.
 - On every Rare OU, Uber, and AG pull, the colored portal begins as the
   silhouette appears. When the name and full sprite resolve, a transparent
-  full typing appears as clean text (for example, `Bug ◆ Steel`) and fades out
-  slowly after the full sprite appears. Type sigils are intentionally omitted.
+  full typing appears as clean text (for example, `Bug ◆ Steel`) inside the orb
+  and fades out slowly after the full sprite appears. Type sigils are omitted.
   AG keeps its larger magenta shockwave as an extra flourish.
 - Rare OU, any Uber (ordinary or featured), and AG play the user-supplied
   `audio/rare-reveal.wav` when the Pokémon appears. This replaces the synthesized
