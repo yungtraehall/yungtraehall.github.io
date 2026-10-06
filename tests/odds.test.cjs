@@ -70,7 +70,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getRevealTypes, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getSpecialPresentation, getRevealTypes, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -113,39 +113,48 @@ assert.match(generator.getPokemonSpriteUrls("Mewtwo", 9)[0], /sprites\/ani\/mewt
 assert.equal(generator.getFinalToneDelay("Uber") - generator.getFinalToneDelay("OU"), 250);
 assert.equal(generator.getFinalToneDelay("UU"), 650);
 
-// Keep probability-based colors and thresholds, restricted to OU and above.
+// Rarity uses the actual slot chance for OU+, with no category overrides.
 for (const tier of ["ZU", "PU", "NU", "RU", "UU"]) {
-    for (const upperPoolProbability of [0.00001, 0.001, 0.01]) {
-        assert.equal(generator.getRarityDetails({ tier, upperPoolProbability }), null);
+    for (const pullProbability of [0.00001, 0.001, 0.01]) {
+        assert.equal(generator.getRarityDetails({ tier, pullProbability }), null);
     }
 }
 for (const tier of ["OU", "Uber"]) {
-    for (const [upperPoolProbability, label, className] of [
-        [0.0001, "Extremely Rare", "rarity-extremely-rare"],
-        [0.00010001, "Very Rare", "rarity-very-rare"],
-        [0.001, "Very Rare", "rarity-very-rare"],
-        [0.00100001, "Rare", "rarity-rare"],
-        [0.01, "Rare", "rarity-rare"]
+    for (const [pullProbability, label, className] of [
+        [0.00001, "Ultra Rare", "rarity-ultra-rare"],
+        [0.00009999, "Ultra Rare", "rarity-ultra-rare"],
+        [0.0001, "Very Rare", "rarity-very-rare"],
+        [0.00099999, "Very Rare", "rarity-very-rare"],
+        [0.001, "Rare", "rarity-rare"],
+        [0.00999999, "Rare", "rarity-rare"],
+        [0.01, "Common", "rarity-common"],
+        [1, "Common", "rarity-common"]
     ]) {
-        const rarity = generator.getRarityDetails({ tier, upperPoolProbability });
+        const rarity = generator.getRarityDetails({ tier, pullProbability });
+        assert.equal(rarity.probability, pullProbability);
         assert.equal(rarity.label, label);
         assert.equal(rarity.className, className);
     }
-    for (const upperPoolProbability of [undefined, null, NaN, Infinity, 0, -1, 2]) {
-        assert.equal(generator.getRarityDetails({ tier, upperPoolProbability }), null);
+    for (const pullProbability of [undefined, null, NaN, Infinity, 0, -1, 2]) {
+        assert.equal(generator.getRarityDetails({ tier, pullProbability }), null);
     }
 }
-assert.equal(generator.getRarityDetails({ id: "electrode", tier: "RU", upperPoolProbability: 1 / 1763 }), null);
-const zapdosRarity = generator.getRarityDetails({ id: "zapdos", tier: "OU", upperPoolProbability: 1 / 234 });
+assert.equal(generator.getRarityDetails({ tier: "OU", upperPoolProbability: 1 / 392 }), null);
+const exampleRarity = generator.getRarityDetails({ tier: "OU", pullProbability: 1 / 392, upperPoolProbability: 0.5 });
+assert.equal(exampleRarity.displayText, "Rare · 0.26% Chance");
+assert.equal(generator.getRarityDetails({ tier: "Uber", pullProbability: 0.00096552 }).displayText, "Very Rare · 0.097% Chance");
+assert.equal(generator.getRarityDetails({ tier: "Uber", pullProbability: 0.00009999 }).displayText, "Ultra Rare · 0.009999% Chance");
+assert.equal(generator.getRarityDetails({ tier: "OU", pullProbability: 0.00999999 }).displayText, "Rare · 0.999999% Chance");
+assert.doesNotThrow(() => generator.getRarityDetails({ tier: "Uber", pullProbability: 1e-300 }));
+assert.equal(generator.getRarityDetails({ tier: "Uber", pullProbability: 0.00001 }).chanceText, "0.0010% Chance");
+assert.equal(generator.getRarityDetails({ tier: "Uber", pullProbability: 0.00000001 }).chanceText, "0.0000010% Chance");
+assert.equal(generator.getRarityDetails({ id: "electrode", tier: "RU", pullProbability: 1 / 1763 }), null);
+const zapdosRarity = generator.getRarityDetails({ id: "zapdos", tier: "OU", pullProbability: 1 / 234 });
 assert.equal(zapdosRarity.label, "Rare");
-assert.equal(zapdosRarity.oddsText, "1 in 234");
-assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", upperPoolProbability: 0.1 }).label, "");
-assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", upperPoolProbability: 0.00001 }).label, "Extremely Rare");
-assert.equal(generator.getRarityDetails({ id: "miraidon", tier: "Uber", sourceTier: "AG", upperPoolProbability: 0.00001 }).label, "Extremely Rare");
-assert.equal(generator.getRarityDetails({ id: "volcarona", tier: "OU", upperPoolProbability: 1 / 6 }).displayText, "Rare · 1 in 6 among OU+ pulls");
-assert.equal(generator.getRarityDetails({ id: "xerneas", tier: "Uber", sourceTier: "AG", upperPoolProbability: 1 / 296 }).displayText, "Very Rare · 1 in 296 among OU+ pulls");
-assert.equal(generator.getRarityDetails({ id: "zaciancrowned", tier: "Uber", upperPoolProbability: 1 / 84 }).label, "Rare");
-assert.equal(generator.getRarityDetails({ id: "araquanid", tier: "OU", upperPoolProbability: 1 / 4 }).label, "");
+assert.equal(zapdosRarity.chanceText, "0.43% Chance");
+assert.equal(generator.getRarityDetails({ id: "volcarona", tier: "OU", pullProbability: 1 / 6 }).displayText, "Common · 16.67% Chance");
+assert.equal(generator.getRarityDetails({ id: "xerneas", tier: "Uber", sourceTier: "AG", pullProbability: 1 / 296 }).displayText, "Rare · 0.34% Chance");
+assert.equal(generator.getRarityDetails({ id: "zaciancrowned", tier: "Uber", pullProbability: 1 / 84 }).label, "Common");
 
 // Render the reported examples using the real card renderer, not a copy of it.
 for (let index = 0; index < 3; index++) {
@@ -157,25 +166,25 @@ for (let index = 0; index < 3; index++) {
     });
 }
 generator.renderTeam([
-    { id: "electrode", name: "Electrode", tier: "RU", generation: 9, upperPoolProbability: 1 / 1763 },
-    { id: "zapdos", name: "Zapdos", tier: "OU", generation: 9, upperPoolProbability: 1 / 234 },
-    { id: "kyogreprimal", name: "Kyogre-Primal", tier: "Uber", generation: 9, upperPoolProbability: 1 / 500 }
+    { id: "electrode", name: "Electrode", tier: "RU", generation: 9, pullProbability: 1 / 1763 },
+    { id: "zapdos", name: "Zapdos", tier: "OU", generation: 9, pullProbability: 1 / 234 },
+    { id: "kyogreprimal", name: "Kyogre-Primal", tier: "Uber", generation: 9, pullProbability: 1 / 500 }
 ]);
 assert.ok(!cards[0].innerHTML.includes("pokemon-pull-rarity"));
 assert.ok(cards[1].innerHTML.includes("pokemon-pull-rarity rarity-rare"));
 assert.ok(!cards[0].innerHTML.includes("1 in 1,763"));
-assert.ok(cards[1].innerHTML.includes("Rare · 1 in 234"));
+assert.ok(cards[1].innerHTML.includes("Rare · 0.43% Chance"));
 assert.ok(cards[2].innerHTML.includes("Featured rare Uber"));
-assert.ok(cards[2].innerHTML.includes("Rare · 1 in 500"));
+assert.ok(cards[2].innerHTML.includes("Rare · 0.20% Chance"));
 assert.equal((cards[2].innerHTML.match(/Featured rare Uber/g) || []).length, 1);
 generator.renderTeam([
-    { id: "xerneas", name: "Xerneas", tier: "Uber", sourceTier: "AG", generation: 9, upperPoolProbability: 1 / 296 },
-    { id: "volcarona", name: "Volcarona", tier: "OU", generation: 9, upperPoolProbability: 1 / 6 },
+    { id: "xerneas", name: "Xerneas", tier: "Uber", sourceTier: "AG", generation: 9, pullProbability: 1 / 296 },
+    { id: "volcarona", name: "Volcarona", tier: "OU", generation: 9, pullProbability: 1 / 6 },
     { id: "ribombee", name: "Ribombee", tier: "RU", generation: 9 }
 ]);
 assert.ok(cards[0].classes.has("special-ag"));
-assert.ok(cards[0].innerHTML.includes("Very Rare · 1 in 296"));
-assert.ok(cards[1].innerHTML.includes("Rare · 1 in 6"));
+assert.ok(cards[0].innerHTML.includes("Rare · 0.34% Chance"));
+assert.ok(cards[1].innerHTML.includes("Common · 16.67% Chance"));
 generator.renderTeam([
     { id: "ribombee", name: "Ribombee", tier: "RU", generation: 9 },
     { id: "ribombee", name: "Ribombee", tier: "RU", generation: 9 },
@@ -211,31 +220,66 @@ assert.equal(generator.getRarityCategory({ id: "arceus", tier: "Uber", sourceTie
 assert.equal(generator.getPreviewPokemon([{id:"mewtwo",tier:"Uber"},{id:"zacian",tier:"Uber"}]).id, "zacian");
 assert.equal(generator.getPreviewPokemon([{id:"garchomp",tier:"OU"},{id:"mewtwo",tier:"Uber"}]).id, "mewtwo");
 
-// The display benchmark excludes every lower tier, normalizes to 100%, and
-// retains special/usage weights. It does not alter actual roll probabilities.
-const upperSample = [
-    { id: "ordinaryou", tier: "OU", usageModifier: 1 },
-    { id: "garchomp", tier: "OU", usageModifier: 1 },
-    { id: "ordinaryuber", tier: "Uber", usageModifier: 1 },
-    { id: "zacian", tier: "Uber", usageModifier: 1 },
-    { id: "ag", tier: "Uber", sourceTier: "AG", usageModifier: 1 }
-];
-const benchmark = generator.getUpperPoolProbabilities(upperSample, "Uber", "++");
-const padded = generator.getUpperPoolProbabilities([...upperSample,
-    ...Array.from({length: 100}, (_, i) => ({id: "lower" + i, tier: "UU", usageModifier: 100}))], "Uber", "++");
-for (const [id, probability] of benchmark) assert.equal(padded.get(id), probability);
-assert.ok(Math.abs([...benchmark.values()].reduce((sum, p) => sum + p, 0) - 1) < 1e-12);
-assert.ok(Math.abs(benchmark.get("garchomp") / benchmark.get("ordinaryou") - 0.75) < 1e-12);
-assert.ok(Math.abs(benchmark.get("zacian") / benchmark.get("ordinaryuber") - 0.5) < 1e-12);
-assert.ok(Math.abs(benchmark.get("ag") / benchmark.get("ordinaryuber") - 0.1) < 1e-12);
-assert.equal(generator.getUpperPoolProbabilities(upperSample, "UU", "++").size, 0);
-const onlyOU = generator.getUpperPoolProbabilities(upperSample, "OU", "++");
-assert.equal(onlyOU.size, 2);
-assert.ok(Math.abs([...onlyOU.values()].reduce((sum, p) => sum + p, 0) - 1) < 1e-12);
-const mewtwoComparisons = ["gen1", "nationaldex", "bananza"].map(pool =>
-    generator.getUpperPoolProbabilities(generator.datasets[pool], "Uber", "++").get("mewtwo"));
-assert.equal(new Set(mewtwoComparisons).size, 3);
-console.log("Mewtwo OU+ comparisons (Gen 1 / National Dex / Bananza, Uber++):", mewtwoComparisons.map(p => "1 in " + Math.round(1/p)).join(" / "));
+// Independently reconstruct the chance for each selected slot, including
+// missing/exhausted tiers and the exact forms already excluded from this team.
+function verifySlotProbabilities(team, pool, ceiling, mode) {
+    const available = pool.filter(p => tiers.indexOf(p.tier) <= tiers.indexOf(ceiling));
+    for (const pokemon of team) {
+        const selection = generator.getTierSelectionData(available, pool, ceiling, mode);
+        const tierTotal = selection.availableTiers.reduce((sum, tier) => sum + selection.tierWeights[tier], 0);
+        const members = available.filter(p => p.tier === pokemon.tier);
+        const speciesTotal = members.reduce((sum, p) => sum + generator.getPokemonPullWeight(p), 0);
+        const expected = selection.tierWeights[pokemon.tier] / tierTotal * generator.getPokemonPullWeight(pokemon) / speciesTotal;
+        assert.ok(Math.abs(pokemon.pullProbability - expected) < 1e-12);
+        assert.ok(!Object.hasOwn(pokemon, "upperPoolProbability"));
+        const badge = generator.getRarityDetails(pokemon);
+        if (pokemon.tier === "OU" || pokemon.tier === "Uber") {
+            assert.equal(badge.probability, expected);
+            assert.ok(badge.displayText.endsWith("% Chance"));
+        } else assert.equal(badge, null);
+        available.splice(available.findIndex(p => p.id === pokemon.id), 1);
+    }
+}
+function forceFirstPokemon(pool, id, mode, ceiling = "Uber") {
+    const available = pool.filter(p => tiers.indexOf(p.tier) <= tiers.indexOf(ceiling));
+    const target = available.find(p => p.id === id);
+    assert.ok(target, id);
+    const selection = generator.getTierSelectionData(available, pool, ceiling, mode);
+    const tierTotal = selection.availableTiers.reduce((sum, tier) => sum + selection.tierWeights[tier], 0);
+    const earlierTiers = selection.availableTiers.slice(0, selection.availableTiers.indexOf(target.tier));
+    const tierRoll = (earlierTiers.reduce((sum, tier) => sum + selection.tierWeights[tier], 0) + selection.tierWeights[target.tier] / 2) / tierTotal;
+    const members = available.filter(p => p.tier === target.tier);
+    const weights = members.map(p => generator.getPokemonPullWeight(p));
+    const index = members.findIndex(p => p.id === id);
+    const speciesRoll = (weights.slice(0, index).reduce((sum, w) => sum + w, 0) + weights[index] / 2) / weights.reduce((sum, w) => sum + w, 0);
+    const originalRandom = seededMath.random;
+    let calls = 0;
+    seededMath.random = () => calls++ === 0 ? tierRoll : (calls === 2 ? speciesRoll : originalRandom());
+    let team;
+    try { team = generator.generateTeam(pool, ceiling, mode); }
+    finally { seededMath.random = originalRandom; }
+    assert.equal(team[0].id, id);
+    verifySlotProbabilities(team, pool, ceiling, mode);
+    return team[0];
+}
+const mewtwoChances = ["gen1", "nationaldex", "bananza"].map(pool =>
+    forceFirstPokemon(generator.datasets[pool], "mewtwo", "++").pullProbability);
+assert.equal(new Set(mewtwoChances).size, 3);
+console.log("Mewtwo actual slot percentages (Gen 1 / National Dex / Bananza, Uber++):", mewtwoChances.map(p => (p * 100).toFixed(6) + "%").join(" / "));
+// Ordinary, featured OU/Uber, and AG probabilities all respond to Odds.
+for (const id of ["mewtwo", "zacian", "dragapult", "koraidon"]) {
+    const pool = generator.datasets.bananza;
+    const pulled = modes.map(mode => forceFirstPokemon(pool, id, mode));
+    for (let i = 1; i < pulled.length; i++) {
+        assert.ok(pulled[i].pullProbability > pulled[i - 1].pullProbability);
+        const rarityOrder = ["Common", "Rare", "Very Rare", "Ultra Rare"];
+        assert.ok(rarityOrder.indexOf(generator.getRarityDetails(pulled[i]).label) <= rarityOrder.indexOf(generator.getRarityDetails(pulled[i - 1]).label));
+    }
+}
+const visualScale = modes.map(mode => generator.getRarityDetails(forceFirstPokemon(generator.datasets.gen1, "mewtwo", mode)));
+assert.equal(visualScale[0].label, "Rare");
+assert.equal(visualScale.at(-1).label, "Common");
+assert.notEqual(visualScale[0].className, visualScale.at(-1).className);
 
 // Type filtering uses each exact form's modern typing, including either dual type.
 const types = ["Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying", "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water"];
@@ -248,8 +292,7 @@ for (const type of types) {
         const team = generator.generateTeam(pool, "Uber", mode);
         assert.equal(new Set(team.map(p => p.id)).size, 6);
         assert.ok(team.every(p => context.details[p.id].modern.types.includes(type)));
-        const benchmark = generator.getUpperPoolProbabilities(pool, "Uber", mode);
-        for (const p of team) assert.equal(p.upperPoolProbability, benchmark.get(p.id) ?? null);
+        verifySlotProbabilities(team, pool, "Uber", mode);
     }
 }
 assert.ok(generator.getActivePokemonPool("bananza", "Bug").some(p => p.id === "volcarona"));
@@ -288,11 +331,10 @@ for (const [poolName, pool] of Object.entries(generator.datasets)) {
             const team = generator.generateTeam(pool, ceiling, mode);
             assert.equal(team.length, 6);
             assert.equal(new Set(team.map(pokemon => pokemon.id)).size, 6);
+            verifySlotProbabilities(team, pool, ceiling, mode);
             for (const pokemon of team) {
                 assert.ok(tiers.indexOf(pokemon.tier) <= tiers.indexOf(ceiling));
                 assert.ok(pokemon.pullProbability > 0 && pokemon.pullProbability <= 1);
-                const expectedDisplay = generator.getUpperPoolProbabilities(pool, ceiling, mode).get(pokemon.id) ?? null;
-                assert.equal(pokemon.upperPoolProbability, expectedDisplay);
             }
         }
     }
@@ -389,10 +431,12 @@ if (process.argv.includes("--simulate")) {
         ]) {
             context.oscillatorFrequencies.length = 0;
             context.sampleStarts = 0;
-            context.preview = { id, name: id, generation: 9, tier, sourceTier, upperPoolProbability: 0.00001 };
+            context.preview = { id, name: id, generation: 9, tier, sourceTier, pullProbability: 0.00001 };
             await vm.runInContext('playRevealSequence(preview.tier, preview)', context);
             const snapshot = context.revealSnapshots.at(-1);
             assert.equal(snapshot.label, label);
+            assert.ok(snapshot.classes.includes("rarity-ultra-rare"));
+            assert.equal(element("reveal-pull-chance").className, "reveal-pull-chance rarity-ultra-rare");
             const shouldHaveEffect = generator.shouldPlayRevealAudio(context.preview);
             assert.equal(snapshot.typeText, shouldHaveEffect ? generator.getRevealTypes(context.preview).join(" ◆ ") : "");
             if (shouldHaveEffect) assert.ok(snapshot.classes.includes("rare-reveal"));
