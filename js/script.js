@@ -143,6 +143,7 @@ let audioContext = null;
 let revealAudioBufferPromise = null;
 let activeRevealAudio = null;
 let revealAudioToken = 0;
+const revealAudioDuration = 2936;
 const typePoolSelect = document.getElementById("type-pool-select");
 const typePoolSetting = document.getElementById("type-pool-setting");
 const typePoolNote = document.getElementById("type-pool-note");
@@ -690,10 +691,10 @@ function stopRevealAudio() {
 }
 
 async function playRevealAudio(pokemon) {
-    if (!shouldPlayRevealAudio(pokemon) || !audioContext) return;
+    if (!shouldPlayRevealAudio(pokemon) || !audioContext) return false;
     const token = revealAudioToken;
     const buffer = await loadRevealAudio();
-    if (!buffer || token !== revealAudioToken || audioContext.state !== "running") return;
+    if (!buffer || token !== revealAudioToken || audioContext.state !== "running") return false;
     const source = audioContext.createBufferSource();
     const gain = audioContext.createGain();
     source.buffer = buffer;
@@ -706,6 +707,7 @@ async function playRevealAudio(pokemon) {
     };
     activeRevealAudio = source;
     source.start();
+    return true;
 }
 
 function pulseRevealStage(pulseNumber) {
@@ -759,6 +761,8 @@ async function playRevealSequence(
     revealOverlay.className = "reveal-overlay";
     if (special) revealOverlay.classList.add(special.className);
     document.getElementById("reveal-special-label").textContent = special ? special.label : "";
+    document.getElementById("reveal-type-sigils").textContent =
+        special?.className === "special-ou" ? getRevealTypeSigils(previewPokemon).join("  ✦  ") : "";
     const previewTierLabel = previewPokemon.sourceTier === "AG" ? "AG" : previewPokemon.tier;
     revealTierName.textContent = previewTierLabel;
     revealPullChance.textContent = previewRarity ? previewRarity.displayText : "";
@@ -813,6 +817,7 @@ async function playRevealSequence(
 
         revealOverlay.className = "reveal-overlay";
         document.getElementById("reveal-special-label").textContent = "";
+        document.getElementById("reveal-type-sigils").textContent = "";
         revealPreviewSprite.src = "";
         revealPreviewSprite.alt = "";
         revealPreviewSprite.onerror = null;
@@ -925,9 +930,13 @@ async function playRevealSequence(
     revealOverlay.classList.add(
         "pokemon-revealed"
     );
-    void playRevealAudio(previewPokemon);
+    const audioStarted = await playRevealAudio(previewPokemon);
+    await sleep(audioStarted ? revealAudioDuration : 360);
 
-    await sleep(360);
+    if (special) {
+        revealOverlay.classList.add("special-climax");
+        await sleep(1250);
+    }
 
 
     /*
@@ -975,6 +984,7 @@ async function playRevealSequence(
 
     revealPokemonName.textContent = "";
     revealPullChance.textContent = "";
+    document.getElementById("reveal-type-sigils").textContent = "";
     revealContinueButton.blur();
 
     document.body.classList.remove(
@@ -1494,6 +1504,9 @@ function isFeaturedPokemon(pokemon) {
 }
 
 function getSpecialPresentation(pokemon) {
+    if (pokemon.sourceTier === "AG") {
+        return { className: "special-ag", color: "#DF00FF", label: "Anything Goes" };
+    }
     if (!isFeaturedPokemon(pokemon)) return null;
     if (pokemon.tier === "Uber" || pokemon.sourceTier === "AG") {
         return { className: "special-uber", color: "#DF00FF", label: pokemon.sourceTier === "AG" ? "Featured AG" : "Featured rare Uber" };
@@ -1502,6 +1515,10 @@ function getSpecialPresentation(pokemon) {
         return { className: "special-ou", color: "#800020", label: "Rare OU" };
     }
     return null;
+}
+
+function getRevealTypeSigils(pokemon) {
+    return POKEMON_DETAILS_DATA[pokemon.id]?.modern.types || [];
 }
 
 function getRarityCategory(pokemon) {

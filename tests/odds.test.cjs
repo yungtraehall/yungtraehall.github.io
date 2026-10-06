@@ -63,7 +63,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getRevealTypeSigils, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -175,6 +175,10 @@ for (const id of ["kyogre", "groudon", "mewtwo", "rayquazamega", "garchompmega",
 assert.equal(generator.getSpecialPresentation({ id: "garchomp", tier: "Uber" }).color, "#DF00FF");
 assert.equal(generator.getSpecialPresentation({ id: "spectrier", tier: "OU" }).color, "#800020");
 assert.equal(generator.getSpecialPresentation({ id: "garchomp", tier: "UU" }), null);
+assert.deepEqual([...generator.getRevealTypeSigils({ id: "volcarona" })], ["Bug", "Fire"]);
+assert.deepEqual([...generator.getRevealTypeSigils({ id: "garchomp" })], ["Dragon", "Ground"]);
+assert.deepEqual([...generator.getRevealTypeSigils({ id: "unknown" })], []);
+assert.equal(generator.getSpecialPresentation({ id: "koraidon", tier: "Uber", sourceTier: "AG" }).className, "special-ag");
 assert.equal(generator.getRarityCategory({ id: "arceus", tier: "Uber", sourceTier: "AG" }).multiplier, 0.1);
 assert.equal(generator.getPreviewPokemon([{id:"mewtwo",tier:"Uber"},{id:"zacian",tier:"Uber"}]).id, "zacian");
 assert.equal(generator.getPreviewPokemon([{id:"garchomp",tier:"OU"},{id:"mewtwo",tier:"Uber"}]).id, "mewtwo");
@@ -331,7 +335,8 @@ if (process.argv.includes("--simulate")) {
     context.sampleStarts = 0;
     context.takeSnapshot = () => context.revealSnapshots.push({
         classes: overlay.className, color: properties["--reveal-color"],
-        label: element("reveal-special-label").textContent
+        label: element("reveal-special-label").textContent,
+        sigils: element("reveal-type-sigils").textContent
     });
     vm.runInContext(`
         sleep = async () => {};
@@ -347,18 +352,21 @@ if (process.argv.includes("--simulate")) {
     `, context);
     for (const reduced of [false, true]) {
         context.reducedMotion = reduced;
-        for (const [id, tier, color, label, notes] of [
+        for (const [id, tier, color, label, notes, sourceTier] of [
             ["zaciancrowned", "Uber", "#DF00FF", "Featured rare Uber", 6],
             ["garchomp", "OU", "#800020", "Rare OU", 6],
+            ["koraidon", "Uber", "#DF00FF", "Anything Goes", 6, "AG"],
             ["mewtwo", "Uber", null, "", 6],
             ["zapdos", "OU", null, "", 6]
         ]) {
             context.oscillatorFrequencies.length = 0;
             context.sampleStarts = 0;
-            context.preview = { id, name: id, generation: 9, tier, upperPoolProbability: 0.00001 };
+            context.preview = { id, name: id, generation: 9, tier, sourceTier, upperPoolProbability: 0.00001 };
             await vm.runInContext('playRevealSequence(preview.tier, preview)', context);
             const snapshot = context.revealSnapshots.at(-1);
             assert.equal(snapshot.label, label);
+            assert.equal(snapshot.sigils, id === "garchomp" ? "Dragon  ✦  Ground" : "");
+            if (!reduced && label) assert.ok(snapshot.classes.includes("special-climax"));
             if (color) assert.equal(snapshot.color, color);
             else assert.ok(!snapshot.classes.includes('special-'));
             assert.equal(overlay.className, 'reveal-overlay');
