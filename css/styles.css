@@ -1361,6 +1361,7 @@ body.reveal-active {
     box-shadow:0 0 12px rgba(248,194,73,.22);
 }
 .reveal-pull-chance {
+    text-align: center;
     position: absolute;
     z-index: 6;
     left: 50%;

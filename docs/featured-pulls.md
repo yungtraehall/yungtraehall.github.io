@@ -43,9 +43,13 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 - Usage displays the exact form's rank, generated-tier ladder, percentage, and
   snapshot date (e.g. Kyurem: `Rank #74 · Gen5OU`, `1.516% Usage · 2016-03`,
   or `Rank #12 · Gen9OU`, `12.023% Usage · 2026-08`). It uses that tier's
-  history record, not an unrelated OU/Uber export. National Dex and Bananza
-  lack matching records and explicitly show unavailable usage. Champions uses
-  its own cached OU ladder only for OU Pokémon. No missing usage is shown as zero.
+  history record, not an unrelated OU/Uber export. If matching usage is absent
+  (including National Dex and Bananza), it falls back to the exact form's best
+  historical usage rank, then higher usage percentage and newer generation for
+  ties. The fallback displays its actual ladder and date; its tooltip explains
+  the historical source. Yveltal shows `Rank #1 · Gen8Uber`,
+  `38.334% Usage · 2022-10`. Champions prefers its own cached OU ladder for OU
+  Pokémon. Forms with no recorded history remain unavailable, never zero.
 - On every Rare OU, Uber, and AG pull, the colored portal begins as the
   silhouette appears. When the name and full sprite resolve, a transparent
   full typing appears as translucent text (for example, `Bug ◆ Steel`) in front

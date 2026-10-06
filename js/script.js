@@ -1561,6 +1561,7 @@ function getRevealUsageDetails(pokemon) {
     let ladder = "Gen" + pokemon.generation + tier;
     let usage = null;
     let period = "";
+    let historicalFallback = false;
     if (["nationaldex", "gen9nationaldex", "bananza"].includes(pool)) {
         // Standard-generation usage would describe a different ladder.
         ladder = (pool === "bananza" ? "Bananza " : "National Dex ") + tier;
@@ -1582,14 +1583,34 @@ function getRevealUsageDetails(pokemon) {
             usage = { rank: pokemon.usage.rank, pct: pokemon.usage.usagePct };
         }
     }
-    if (usage && Number.isFinite(usage.rank) && Number.isFinite(usage.pct)) {
+    const validUsage = record => record && Number.isInteger(record.rank) && record.rank > 0 && Number.isFinite(record.pct) && record.pct >= 0;
+    if (!validUsage(usage)) {
+        // Use the exact form's best historical rank, retaining its real ladder/date.
+        // Higher usage breaks rank ties, followed by the newer generation.
+        const records = (POKEMON_DETAILS_DATA[pokemon.id]?.history || []).flatMap((entry, index) => {
+            const record = entry.usage;
+            const match = record?.format?.match(/^gen([1-9])(ubers|anythinggoes|ou|uu|ru|nu|pu|zu)$/);
+            if (entry.status !== "available" || record?.status !== "recorded" || !validUsage(record) || !match || Number(match[1]) !== index + 1) return [];
+            const recordTier = match[2] === "ubers" ? "Uber" : (match[2] === "anythinggoes" ? "AG" : match[2].toUpperCase());
+            if (recordTier !== entry.tier) return [];
+            return [{ usage: record, generation: index + 1, ladder: "Gen" + match[1] + recordTier }];
+        });
+        records.sort((a, b) => a.usage.rank - b.usage.rank || b.usage.pct - a.usage.pct || b.generation - a.generation);
+        if (records.length) {
+            usage = records[0].usage;
+            ladder = records[0].ladder;
+            period = usage.period;
+            historicalFallback = true;
+        }
+    }
+    if (validUsage(usage)) {
         return { rankText: "Rank #" + usage.rank + " · " + ladder,
             percentageText: usage.pct.toFixed(3) + "% Usage" + (period ? " · " + period : ""),
-            description: "Recorded ladder usage for " + ladder + (period ? " in " + period : "") + ". This is separate from the generator's pull chance." };
+            description: (historicalFallback ? "Best historical usage rank; the selected pool/tier has no matching record. " : "") + "Recorded ladder usage for " + ladder + (period ? " in " + period : "") + ". This is separate from the generator's pull chance." };
     }
     return { rankText: "Usage unavailable · " + ladder,
         percentageText: period ? "Snapshot · " + period : "No tier usage record",
-        description: "No published exact-form usage record for this pool and generated tier. Missing usage is not zero usage." };
+        description: "No published exact-form usage record for this pool and generated tier, or a historical fallback. Missing usage is not zero usage." };
 }
 
 function getRarityCategory(pokemon) {
