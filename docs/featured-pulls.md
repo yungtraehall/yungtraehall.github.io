@@ -39,8 +39,9 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
   and a featured label. The odds stay above the orb with space above the label.
 - On every Rare OU, Uber, and AG pull, the colored portal begins as the
   silhouette appears. When the name and full sprite resolve, a transparent
-  full typing appears as clean text (for example, `Bug ◆ Steel`) inside the orb
-  and fades out slowly after the full sprite appears. Type sigils are omitted.
+  full typing appears as translucent text (for example, `Bug ◆ Steel`) in front
+  of the sprite, within a circular layer aligned to the orb, and fades out
+  slowly after the full sprite appears. Type sigils are omitted.
   AG keeps its larger magenta shockwave as an extra flourish.
 - Rare OU, any Uber (ordinary or featured), and AG play the user-supplied
   `audio/rare-reveal.wav` when the Pokémon appears. This replaces the synthesized
