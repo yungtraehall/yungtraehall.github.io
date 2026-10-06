@@ -12,6 +12,7 @@ function element(id) {
     if (!elements.has(id)) {
         elements.set(id, {
             value: "",
+            dataset: {},
             addEventListener() {},
             blur() {},
             classList: { add() {}, remove() {} },
@@ -63,7 +64,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getRevealTypeSigils, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getRevealPrimaryType, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -175,9 +176,9 @@ for (const id of ["kyogre", "groudon", "mewtwo", "rayquazamega", "garchompmega",
 assert.equal(generator.getSpecialPresentation({ id: "garchomp", tier: "Uber" }).color, "#DF00FF");
 assert.equal(generator.getSpecialPresentation({ id: "spectrier", tier: "OU" }).color, "#800020");
 assert.equal(generator.getSpecialPresentation({ id: "garchomp", tier: "UU" }), null);
-assert.deepEqual([...generator.getRevealTypeSigils({ id: "volcarona" })], ["Bug", "Fire"]);
-assert.deepEqual([...generator.getRevealTypeSigils({ id: "garchomp" })], ["Dragon", "Ground"]);
-assert.deepEqual([...generator.getRevealTypeSigils({ id: "unknown" })], []);
+assert.equal(generator.getRevealPrimaryType({ id: "volcarona" }), "Bug");
+assert.equal(generator.getRevealPrimaryType({ id: "garchomp" }), "Dragon");
+assert.equal(generator.getRevealPrimaryType({ id: "unknown" }), "");
 assert.equal(generator.getSpecialPresentation({ id: "koraidon", tier: "Uber", sourceTier: "AG" }).className, "special-ag");
 assert.equal(generator.getRarityCategory({ id: "arceus", tier: "Uber", sourceTier: "AG" }).multiplier, 0.1);
 assert.equal(generator.getPreviewPokemon([{id:"mewtwo",tier:"Uber"},{id:"zacian",tier:"Uber"}]).id, "zacian");
@@ -336,7 +337,8 @@ if (process.argv.includes("--simulate")) {
     context.takeSnapshot = () => context.revealSnapshots.push({
         classes: overlay.className, color: properties["--reveal-color"],
         label: element("reveal-special-label").textContent,
-        sigils: element("reveal-type-sigils").textContent
+        sigil: element("reveal-type-sigil-label").textContent,
+        sigilType: element("reveal-type-sigil-glyph").dataset.type
     });
     vm.runInContext(`
         sleep = async () => {};
@@ -365,8 +367,10 @@ if (process.argv.includes("--simulate")) {
             await vm.runInContext('playRevealSequence(preview.tier, preview)', context);
             const snapshot = context.revealSnapshots.at(-1);
             assert.equal(snapshot.label, label);
-            assert.equal(snapshot.sigils, id === "garchomp" ? "Dragon  ✦  Ground" : "");
-            if (!reduced && label) assert.ok(snapshot.classes.includes("special-climax"));
+            const shouldHaveEffect = generator.shouldPlayRevealAudio(context.preview);
+            assert.equal(snapshot.sigil, shouldHaveEffect ? generator.getRevealPrimaryType(context.preview) : "");
+            assert.equal(snapshot.sigilType, shouldHaveEffect ? generator.getRevealPrimaryType(context.preview).toLowerCase() : "");
+            if (!reduced && shouldHaveEffect) assert.ok(snapshot.classes.includes("rare-reveal"));
             if (color) assert.equal(snapshot.color, color);
             else assert.ok(!snapshot.classes.includes('special-'));
             assert.equal(overlay.className, 'reveal-overlay');

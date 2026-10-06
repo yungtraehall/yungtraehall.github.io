@@ -143,7 +143,6 @@ let audioContext = null;
 let revealAudioBufferPromise = null;
 let activeRevealAudio = null;
 let revealAudioToken = 0;
-const revealAudioDuration = 2936;
 const typePoolSelect = document.getElementById("type-pool-select");
 const typePoolSetting = document.getElementById("type-pool-setting");
 const typePoolNote = document.getElementById("type-pool-note");
@@ -758,11 +757,29 @@ async function playRevealSequence(
     revealPokemonName.textContent = previewPokemon.name;
     const previewRarity = getRarityDetails(previewPokemon);
     const special = getSpecialPresentation(previewPokemon);
+    const revealColor = special ? special.color : revealTierColors[highestTier];
     revealOverlay.className = "reveal-overlay";
     if (special) revealOverlay.classList.add(special.className);
     document.getElementById("reveal-special-label").textContent = special ? special.label : "";
-    document.getElementById("reveal-type-sigils").textContent =
-        special?.className === "special-ou" ? getRevealTypeSigils(previewPokemon).join("  ✦  ") : "";
+    const hasRareRevealEffect = shouldPlayRevealAudio(previewPokemon);
+    const primaryType = getRevealPrimaryType(previewPokemon);
+    const typeSigils = document.getElementById("reveal-type-sigils");
+    const typeSigilGlyph = document.getElementById("reveal-type-sigil-glyph");
+    const typeSigilLabel = document.getElementById("reveal-type-sigil-label");
+    typeSigils.dataset.type = hasRareRevealEffect ? primaryType.toLowerCase() : "";
+    typeSigilGlyph.dataset.type = hasRareRevealEffect ? primaryType.toLowerCase() : "";
+    typeSigilLabel.textContent = hasRareRevealEffect ? primaryType : "";
+    revealOverlay.style.setProperty("--special-color", revealColor);
+    revealOverlay.style.setProperty(
+        "--special-neon",
+        special?.className === "special-ou" ? "#ff3971" :
+            (special ? "#f073ff" : (highestTier === "Uber" ? "#d5a7ff" : "#ff8a78"))
+    );
+    revealOverlay.style.setProperty(
+        "--special-text",
+        special?.className === "special-ou" ? "#ffd2de" :
+            (special ? "#f9c7ff" : "#fff0fb")
+    );
     const previewTierLabel = previewPokemon.sourceTier === "AG" ? "AG" : previewPokemon.tier;
     revealTierName.textContent = previewTierLabel;
     revealPullChance.textContent = previewRarity ? previewRarity.displayText : "";
@@ -783,7 +800,7 @@ async function playRevealSequence(
 
         revealOverlay.style.setProperty(
             "--reveal-color",
-            (special ? special.color : revealTierColors[highestTier])
+            revealColor
         );
 
         revealTierName.textContent =
@@ -817,7 +834,9 @@ async function playRevealSequence(
 
         revealOverlay.className = "reveal-overlay";
         document.getElementById("reveal-special-label").textContent = "";
-        document.getElementById("reveal-type-sigils").textContent = "";
+        typeSigils.dataset.type = "";
+        typeSigilGlyph.dataset.type = "";
+        typeSigilLabel.textContent = "";
         revealPreviewSprite.src = "";
         revealPreviewSprite.alt = "";
         revealPreviewSprite.onerror = null;
@@ -854,10 +873,13 @@ async function playRevealSequence(
     if (previewRarity && previewRarity.className === "rarity-extremely-rare") {
         revealOverlay.classList.add("rarity-extremely-rare");
     }
+    if (hasRareRevealEffect) {
+        revealOverlay.classList.add("rare-reveal");
+    }
 
     revealOverlay.style.setProperty(
         "--reveal-color",
-        (special ? special.color : revealTierColors[highestTier])
+        revealColor
     );
 
     revealOverlay.setAttribute(
@@ -930,13 +952,7 @@ async function playRevealSequence(
     revealOverlay.classList.add(
         "pokemon-revealed"
     );
-    const audioStarted = await playRevealAudio(previewPokemon);
-    await sleep(audioStarted ? revealAudioDuration : 360);
-
-    if (special) {
-        revealOverlay.classList.add("special-climax");
-        await sleep(1250);
-    }
+    await playRevealAudio(previewPokemon);
 
 
     /*
@@ -984,7 +1000,9 @@ async function playRevealSequence(
 
     revealPokemonName.textContent = "";
     revealPullChance.textContent = "";
-    document.getElementById("reveal-type-sigils").textContent = "";
+    typeSigils.dataset.type = "";
+    typeSigilGlyph.dataset.type = "";
+    typeSigilLabel.textContent = "";
     revealContinueButton.blur();
 
     document.body.classList.remove(
@@ -1517,8 +1535,8 @@ function getSpecialPresentation(pokemon) {
     return null;
 }
 
-function getRevealTypeSigils(pokemon) {
-    return POKEMON_DETAILS_DATA[pokemon.id]?.modern.types || [];
+function getRevealPrimaryType(pokemon) {
+    return POKEMON_DETAILS_DATA[pokemon.id]?.modern.types?.[0] || "";
 }
 
 function getRarityCategory(pokemon) {
