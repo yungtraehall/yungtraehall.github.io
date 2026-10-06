@@ -6,7 +6,7 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const revealMarkup = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const revealStyles = fs.readFileSync(path.join(root, "css", "styles.css"), "utf8");
-assert.match(revealMarkup, /<div class="reveal-orb"><\/div>\s*<div class="reveal-type-overlay">\s*<div id="reveal-type-text"/);
+assert.match(revealMarkup, /<div class="reveal-orb">\s*<svg class="reveal-rift"/);
 assert.match(revealStyles, /\.reveal-type-overlay\s*\{[^}]*z-index:\s*4;[^}]*border-radius:\s*50%;[^}]*overflow:\s*hidden;/);
 assert.doesNotMatch(revealMarkup, /reveal-type-sigil/);
 assert.match(revealStyles, /\.reveal-overlay\.rare-reveal\.pokemon-revealed \.reveal-type-text \{ animation: type-text-fade 1\.9s/);
@@ -23,7 +23,8 @@ function element(id) {
             blur() {},
             classList: { add() {}, remove() {} },
             style: { setProperty() {} },
-            setAttribute() {}
+            setAttribute() {},
+            removeAttribute(name) { delete this[name]; }
         });
     }
     return elements.get(id);
@@ -427,7 +428,8 @@ if (process.argv.includes("--simulate")) {
             ["garchomp", "OU", "#800020", "Rare OU", 6],
             ["koraidon", "Uber", "#DF00FF", "Anything Goes", 6, "AG"],
             ["mewtwo", "Uber", null, "", 6],
-            ["zapdos", "OU", null, "", 6]
+            ["zapdos", "OU", null, "", 6],
+            ["ribombee", "RU", null, "", 6]
         ]) {
             context.oscillatorFrequencies.length = 0;
             context.sampleStarts = 0;
@@ -435,19 +437,42 @@ if (process.argv.includes("--simulate")) {
             await vm.runInContext('playRevealSequence(preview.tier, preview)', context);
             const snapshot = context.revealSnapshots.at(-1);
             assert.equal(snapshot.label, label);
-            assert.ok(snapshot.classes.includes("rarity-ultra-rare"));
-            assert.equal(element("reveal-pull-chance").className, "reveal-pull-chance rarity-ultra-rare");
+            assert.equal(snapshot.classes.includes("rarity-ultra-rare"), tier === "OU" || tier === "Uber");
+            assert.equal(element("reveal-pull-chance").className, "reveal-pull-chance" + (tier === "OU" || tier === "Uber" ? " rarity-ultra-rare" : ""));
             const shouldHaveEffect = generator.shouldPlayRevealAudio(context.preview);
             assert.equal(snapshot.typeText, shouldHaveEffect ? generator.getRevealTypes(context.preview).join(" ◆ ") : "");
             if (shouldHaveEffect) assert.ok(snapshot.classes.includes("rare-reveal"));
+            assert.equal(snapshot.classes.includes("rift-reveal"), label === "Rare OU");
+            assert.equal(snapshot.classes.includes("stardust-reveal"), tier === "Uber");
             if (color) assert.equal(snapshot.color, color);
             else assert.ok(!snapshot.classes.includes('special-'));
             assert.equal(overlay.className, 'reveal-overlay');
+            assert.equal(element("reveal-hologram").src, undefined);
+            assert.equal(element("reveal-preview-sprite").onload, null);
             assert.equal(context.oscillatorFrequencies.length, reduced ? 0 : notes);
             assert.equal(context.sampleStarts, !reduced && generator.shouldPlayRevealAudio(context.preview) ? 1 : 0);
         }
     }
     // A late download must not start after the user has continued.
+    context.sampleStarts = 0;
+    const revealPhases = [];
+    const previousSleep = vm.runInContext('sleep', context);
+    context.capturePhase = () => {
+        if (overlay.classList && overlay.className.includes("rarity-revealed")) {
+            revealPhases.push({ classes: overlay.className, sprite: element("reveal-preview-sprite").src,
+                hologram: element("reveal-hologram").src });
+        }
+    };
+    context.reducedMotion = false;
+    vm.runInContext('sleep = async () => capturePhase();', context);
+    context.preview = { id: "garchomp", name: "Garchomp", tier: "OU", generation: 4, pullProbability: .002 };
+    await vm.runInContext('playRevealSequence("OU", preview)', context);
+    assert.ok(revealPhases.some(phase => phase.classes.includes("rift-reveal") && !phase.classes.includes("pokemon-revealed")));
+    assert.ok(revealPhases.some(phase => phase.classes.includes("rift-reveal") && phase.classes.includes("pokemon-revealed")));
+    for (const phase of revealPhases) assert.equal(phase.hologram, phase.sprite);
+    assert.match(revealPhases[0].sprite, /sprites\/gen4\/garchomp\.png$/);
+    context.sleep = previousSleep;
+
     context.sampleStarts = 0;
     vm.runInContext('revealAudioBufferPromise = new Promise(resolve => { globalThis.finishAudioLoad = resolve; });', context);
     const delayedPlayback = vm.runInContext('playRevealAudio({tier:"Uber",id:"mewtwo"})', context);

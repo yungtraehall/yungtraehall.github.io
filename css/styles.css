@@ -1540,3 +1540,95 @@ body.reveal-active {
 #type-pool-setting[hidden] { display: none; }
 #type-pool-note { color: #bdcbe3; font-size: 12px; line-height: 1.4; max-width: 260px; }
 
+/* One-shot reveal accents: the orb clips the background effects itself. */
+.reveal-rift, .reveal-stardust {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+}
+.reveal-rift {
+    inset: 10% 20%;
+    width: 60%;
+    height: 80%;
+    overflow: visible;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 5px var(--special-color));
+}
+.rift-shadow { stroke: #130009; stroke-width: 9; }
+.rift-light { stroke: var(--special-neon); stroke-width: 1.5; }
+.reveal-overlay.rift-reveal.rarity-revealed .reveal-rift {
+    animation: rift-open .62s ease-out both;
+}
+.reveal-overlay.rift-reveal.pokemon-revealed .reveal-rift {
+    animation: rift-seal .7s ease-in both;
+}
+.reveal-stardust { inset: 0; }
+.reveal-stardust i {
+    position: absolute;
+    left: var(--x);
+    top: 84%;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: #fff1ff;
+    box-shadow: 0 0 3px #fff, 0 0 7px var(--special-neon);
+    opacity: 0;
+}
+.reveal-stardust i:nth-child(3n) { width: 4px; height: 4px; }
+.reveal-overlay.stardust-reveal.pokemon-revealed .reveal-stardust { opacity: 1; }
+.reveal-overlay.stardust-reveal.pokemon-revealed .reveal-stardust i {
+    animation: stardust-rise 2.1s ease-out var(--delay) both;
+}
+/* A second copy supplies only the moving shine. Its transparent pixels stay
+   transparent, so the sweep follows the sprite rather than a rectangular box. */
+.reveal-hologram {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    top: 43%;
+    width: min(230px, 48vw);
+    max-height: min(230px, 48vw);
+    height: auto;
+    object-fit: contain;
+    image-rendering: pixelated;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    filter: brightness(1.9) saturate(1.6) drop-shadow(0 0 3px var(--special-neon));
+    mix-blend-mode: screen;
+    -webkit-mask-image: linear-gradient(110deg, transparent 40%, #000 48%, #000 52%, transparent 60%);
+    mask-image: linear-gradient(110deg, transparent 40%, #000 48%, #000 52%, transparent 60%);
+    -webkit-mask-size: 300% 100%;
+    mask-size: 300% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+.reveal-overlay.rare-reveal.pokemon-revealed .reveal-hologram {
+    animation: holographic-sweep 1.05s ease-in-out .12s both;
+}
+@keyframes holographic-sweep {
+    0% { opacity: 0; -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+    18%, 70% { opacity: .65; }
+    100% { opacity: 0; -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes rift-open {
+    0% { opacity: 0; transform: scaleX(.08) scaleY(.6); }
+    35% { opacity: .8; }
+    100% { opacity: .8; transform: scaleX(1) scaleY(1); }
+}
+@keyframes rift-seal {
+    0% { opacity: .8; transform: scaleX(1) scaleY(1); }
+    100% { opacity: 0; transform: scaleX(.02) scaleY(.8); }
+}
+@keyframes stardust-rise {
+    0% { opacity: 0; transform: translate(0, 0) scale(.4); }
+    18% { opacity: .85; }
+    70% { opacity: .5; }
+    100% { opacity: 0; transform: translate(var(--drift), -130px) scale(.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .reveal-rift, .reveal-stardust, .reveal-hologram { display: none; animation: none !important; }
+    .reveal-stardust i { animation: none !important; }
+}

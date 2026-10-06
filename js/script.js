@@ -771,6 +771,17 @@ async function playRevealSequence(
     if (special) revealOverlay.classList.add(special.className);
     document.getElementById("reveal-special-label").textContent = special ? special.label : "";
     const hasRareRevealEffect = shouldPlayRevealAudio(previewPokemon);
+    // Curated OU gets a rift; every Uber (including AG) gets stardust.
+    if (special?.className === "special-ou") revealOverlay.classList.add("rift-reveal");
+    if (previewPokemon.tier === "Uber" || previewPokemon.sourceTier === "AG") {
+        revealOverlay.classList.add("stardust-reveal");
+    }
+    const hologram = document.getElementById("reveal-hologram");
+    const syncHologram = () => {
+        if (hasRareRevealEffect && !prefersReducedMotion) hologram.src = revealPreviewSprite.src;
+    };
+    // Keep the shine on the same exact form and generation, including fallbacks.
+    revealPreviewSprite.onload = syncHologram;
     const revealTypes = getRevealTypes(previewPokemon);
     const typeText = document.getElementById("reveal-type-text");
     typeText.textContent = hasRareRevealEffect ? revealTypes.join(" ◆ ") : "";
@@ -801,6 +812,7 @@ async function playRevealSequence(
         previewPokemon.name,
         previewPokemon.generation
     );
+    syncHologram();
 
 
     /*
@@ -851,6 +863,8 @@ async function playRevealSequence(
         revealPreviewSprite.src = "";
         revealPreviewSprite.alt = "";
         revealPreviewSprite.onerror = null;
+        revealPreviewSprite.onload = null;
+        hologram.removeAttribute("src");
         revealPokemonName.textContent = "";
         revealPullChance.textContent = "";
 
@@ -1005,6 +1019,8 @@ async function playRevealSequence(
     revealPreviewSprite.src = "";
     revealPreviewSprite.alt = "";
     revealPreviewSprite.onerror = null;
+    revealPreviewSprite.onload = null;
+    hologram.removeAttribute("src");
 
     revealPokemonName.textContent = "";
     revealPullChance.textContent = "";

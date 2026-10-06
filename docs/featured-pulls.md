@@ -43,6 +43,14 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
   of the sprite, within a circular layer aligned to the orb, and fades out
   slowly after the full sprite appears. Type sigils are omitted.
   AG keeps its larger magenta shockwave as an extra flourish.
+- Rare OU opens a thin burgundy rift behind the silhouette; it seals as the
+  full sprite and name appear. Every Uber, including AG, gets 12 soft rising
+  stardust particles for up to 2.6 seconds after the full reveal. Both groups
+  get a single 1.05-second holographic sprite sweep. Background effects are
+  children of the actual orb and are clipped by its circular boundary; the
+  shine follows the sprite's transparent outline and exact-generation fallback.
+  These accents start with the reveal, without waiting for the audio to finish,
+  and all disappear without looping. Ordinary OU and lower tiers omit them.
 - Rare OU, any Uber (ordinary or featured), and AG play the user-supplied
   `audio/rare-reveal.wav` when the Pokémon appears. This replaces the synthesized
   flourishes. The 2.936-second WAV is copied unchanged from the latest attachment,
@@ -52,7 +60,7 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 - UU uses the normal 650 ms final-tone spacing. OU keeps 1,100 ms and Uber keeps
   1,350 ms (250 ms beyond OU).
 - Reduced motion uses a static frame and glow, with no portal, crystal,
-  shockwave, or audio clip.
+  shockwave, rift, stardust, holographic sweep, or audio clip.
 - Within the strongest tier of the team, a listed Pokémon takes reveal priority.
   This is deterministic and does not reroll the team or alter its probabilities.
 - The reveal and card classes reset between pulls. The fully revealed sprite
@@ -73,4 +81,3 @@ against the cached modern species typing; either type of a dual-type Pokémon
 qualifies. Type filtering applies to the generator, console simulations, and the
 draw-slot probability calculation. The result details retain the selected type even
 if the dropdown later changes. Other pools ignore the hidden type selection.
-
