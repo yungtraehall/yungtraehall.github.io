@@ -227,11 +227,22 @@ assert.equal(kyurem9.rankText, "Rank #12 · Gen9OU");
 assert.equal(kyurem9.percentageText, "12.023% Usage · 2026-08");
 for (const pool of ["nationaldex", "bananza"]) {
     const result = generator.getRevealUsageDetails({...generator.datasets[pool].find(p => p.id === "kyurem"), selectedPool: pool});
-    assert.ok(result.rankText.startsWith("Usage unavailable"));
-    assert.ok(!result.percentageText.includes("%"));
+    assert.equal(result.rankText, kyurem9.rankText);
+    assert.equal(result.percentageText, kyurem9.percentageText);
+    assert.ok(result.description.startsWith("Best historical usage rank"));
 }
 const mismatch = generator.getRevealUsageDetails({id:"kyurem", generation:5, tier:"UU", usageSource:"gen5ou", usage:{recorded:true,rank:74,usagePct:1.51566}});
-assert.ok(mismatch.rankText.startsWith("Usage unavailable"));
+assert.equal(mismatch.rankText, kyurem9.rankText);
+assert.equal(mismatch.percentageText, kyurem9.percentageText);
+const yveltalFallback = generator.getRevealUsageDetails({id:"yveltal",generation:9,tier:"Uber",selectedPool:"nationaldex"});
+assert.equal(yveltalFallback.rankText, "Rank #1 · Gen8Uber");
+assert.equal(yveltalFallback.percentageText, "38.334% Usage · 2022-10");
+const yveltal6 = generator.getRevealUsageDetails({id:"yveltal",generation:6,tier:"Uber"});
+assert.equal(yveltal6.rankText, "Rank #6 · Gen6Uber");
+assert.ok(!yveltal6.description.startsWith("Best historical"));
+const noHistory = generator.getRevealUsageDetails({id:"yveltalmega",generation:9,tier:"Uber",selectedPool:"nationaldex"});
+assert.ok(noHistory.rankText.startsWith("Usage unavailable"));
+assert.ok(!noHistory.percentageText.includes("%"));
 assert.equal(generator.getSpecialPresentation({id:"xerneas",tier:"Uber",sourceTier:"AG"}).color, "#ffe7a6");
 assert.equal(generator.getSpecialPresentation({ id: "koraidon", tier: "Uber", sourceTier: "AG" }).className, "special-ag");
 assert.equal(generator.getRarityCategory({ id: "arceus", tier: "Uber", sourceTier: "AG" }).multiplier, 0.1);
