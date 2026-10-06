@@ -1467,30 +1467,38 @@ body.reveal-active {
     box-shadow: 0 0 35px var(--special-color), inset 0 0 20px var(--special-color);
 }
 .reveal-type-sigils {
-    z-index: 7;
-    top: 18%;
-    left: 5%;
-    width: 90%;
+    z-index: 2;
+    left: 50%;
+    top: 43%;
+    width: min(62%, 328px);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%) scale(.72);
     color: var(--special-text);
-    display: grid;
-    justify-items: center;
-    gap: 6px;
     font-size: clamp(12px, 3vw, 15px);
     font-weight: 800;
     letter-spacing: .12em;
     text-align: center;
     text-transform: uppercase;
-    text-shadow: 0 0 16px var(--special-color);
 }
 .reveal-type-sigil-glyph {
-    width: clamp(48px, 12vw, 72px);
-    aspect-ratio: 1;
-    position: relative;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
     border: 2px solid var(--special-neon);
     border-radius: 50%;
-    box-shadow: 0 0 13px var(--special-color), inset 0 0 16px color-mix(in srgb, var(--special-color) 42%, transparent);
+    opacity: .48;
+    box-shadow: 0 0 20px var(--special-color), inset 0 0 28px color-mix(in srgb, var(--special-color) 42%, transparent);
 }
 .reveal-type-sigil-glyph::before, .reveal-type-sigil-glyph::after { content: ""; position: absolute; }
+.reveal-type-sigil-label {
+    position: absolute;
+    z-index: 1;
+    top: -34px;
+    left: -10%;
+    width: 120%;
+    text-shadow: 0 0 14px var(--special-color), 0 2px 8px #000;
+}
 .reveal-type-sigil-glyph[data-type="fire"] {
     border-color: #ffc14d;
     background: radial-gradient(circle at 50% 67%, #fff2a0 0 12%, #ff9d1c 24%, #d41d18 52%, transparent 54%);
@@ -1530,9 +1538,9 @@ body.reveal-active {
 @keyframes portal-spin { to { transform: rotate(290deg) scale(1.34); } }
 @keyframes portal-spin-reverse { to { transform: rotate(-360deg) scale(.75); } }
 @keyframes sigil-arrival {
-    0%, 25% { opacity: 0; transform: translateY(8px); }
-    50% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-10px); }
+    0%, 20% { opacity: 0; transform: translate(-50%, -50%) scale(.52); }
+    50% { opacity: .72; transform: translate(-50%, -50%) scale(1.04); }
+    100% { opacity: .48; transform: translate(-50%, -50%) scale(1); }
 }
 @keyframes ag-shockwave {
     0% { opacity: 1; transform: translate(-50%, -50%) scale(.3); }
