@@ -140,6 +140,12 @@ const revealTierColors = {
 
 let revealInProgress = false;
 let audioContext = null;
+let revealAudioBufferPromise = null;
+let activeRevealAudio = null;
+let revealAudioToken = 0;
+const typePoolSelect = document.getElementById("type-pool-select");
+const typePoolSetting = document.getElementById("type-pool-setting");
+const typePoolNote = document.getElementById("type-pool-note");
 
 
 /*
@@ -161,6 +167,7 @@ poolSelect.addEventListener(
     updateTierAvailability
 );
 
+typePoolSelect.addEventListener("change", updateTierAvailability);
 updateTierAvailability();
 
 
@@ -175,10 +182,20 @@ updateTierAvailability();
     selected, move to the nearest stronger valid ceiling.
 */
 
+function getActivePokemonPool(poolName, selectedType = "All") {
+    const pool = datasets[poolName] || [];
+    if (poolName !== "bananza" || selectedType === "All") return pool;
+    return pool.filter(pokemon => POKEMON_DETAILS_DATA[pokemon.id]?.modern.types.includes(selectedType));
+}
+
 function updateTierAvailability() {
 
-    const pokemonPool =
-        datasets[poolSelect.value] || [];
+    const isBananza = poolSelect.value === "bananza";
+    typePoolSetting.hidden = !isBananza;
+    const selectedType = isBananza ? (typePoolSelect.value || "All") : "All";
+    const pokemonPool = getActivePokemonPool(poolSelect.value, selectedType);
+    typePoolNote.textContent = pokemonPool.length + " Pokémon available. Dual-type Pokémon match either type.";
+    if (!revealInProgress) generateButton.disabled = pokemonPool.length < 6;
 
     // Champions OU is an OU-only pool, even if Uber was selected before.
     const hasTierCeiling = poolSelect.value !== "bananza";
@@ -285,8 +302,8 @@ async function generatePokemon() {
     const selectedPool =
         poolSelect.value;
 
-    const pokemonPool =
-        datasets[selectedPool];
+    const selectedType = selectedPool === "bananza" ? (typePoolSelect.value || "All") : "All";
+    const pokemonPool = getActivePokemonPool(selectedPool, selectedType);
 
     const selectedTier = selectedPool === "bananza" ? "Uber" : tierSelect.value;
 
@@ -315,7 +332,7 @@ async function generatePokemon() {
         That tier decides the reveal color.
     */
 
-    generatedPokemon.forEach(pokemon => { pokemon.selectedPool = selectedPool; });
+    generatedPokemon.forEach(pokemon => { pokemon.selectedPool = selectedPool; pokemon.selectedType = selectedType; });
 
     const highestTier =
         getHighestTier(generatedPokemon);
@@ -351,6 +368,7 @@ async function generatePokemon() {
         revealInProgress = false;
         generateButton.disabled = false;
         generateButton.textContent = "Generate Pokémon";
+        updateTierAvailability();
 
     }
 
@@ -580,8 +598,9 @@ function prepareAudio() {
     }
 
     if (audioContext.state === "suspended") {
-        audioContext.resume();
+        audioContext.resume().catch(() => {});
     }
+    loadRevealAudio();
 
 }
 
@@ -646,25 +665,47 @@ function playRevealTone(frequency) {
 }
 
 
-function playSpecialFlourish(className) {
-    if (!audioContext || audioContext.state !== "running") return;
-    const notes = className === "special-uber" ? [523.25, 659.25, 783.99, 1046.5] : [392, 493.88, 587.33];
-    const now = audioContext.currentTime;
-    notes.forEach((frequency, index) => {
-        const start = now + index * 0.11;
-        const oscillator = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(frequency, start);
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(0.045, start + 0.018);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.65);
-        oscillator.connect(gain);
-        gain.connect(audioContext.destination);
-        oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
-        oscillator.start(start);
-        oscillator.stop(start + 0.7);
-    });
+function shouldPlayRevealAudio(pokemon) {
+    return pokemon.tier === "Uber" || pokemon.sourceTier === "AG" ||
+        getSpecialPresentation(pokemon)?.className === "special-ou";
+}
+
+function loadRevealAudio() {
+    if (!audioContext) return Promise.resolve(null);
+    if (!revealAudioBufferPromise) {
+        revealAudioBufferPromise = fetch("audio/rare-reveal.wav")
+            .then(response => { if (!response.ok) throw new Error("Audio unavailable"); return response.arrayBuffer(); })
+            .then(buffer => audioContext.decodeAudioData(buffer))
+            .catch(() => { revealAudioBufferPromise = null; return null; });
+    }
+    return revealAudioBufferPromise;
+}
+
+function stopRevealAudio() {
+    revealAudioToken++;
+    if (activeRevealAudio) {
+        activeRevealAudio.stop();
+        activeRevealAudio = null;
+    }
+}
+
+async function playRevealAudio(pokemon) {
+    if (!shouldPlayRevealAudio(pokemon) || !audioContext) return;
+    const token = revealAudioToken;
+    const buffer = await loadRevealAudio();
+    if (!buffer || token !== revealAudioToken || audioContext.state !== "running") return;
+    const source = audioContext.createBufferSource();
+    const gain = audioContext.createGain();
+    source.buffer = buffer;
+    gain.gain.setValueAtTime(0.55, audioContext.currentTime);
+    source.connect(gain);
+    gain.connect(audioContext.destination);
+    source.onended = () => {
+        if (activeRevealAudio === source) activeRevealAudio = null;
+        source.disconnect(); gain.disconnect();
+    };
+    activeRevealAudio = source;
+    source.start();
 }
 
 function pulseRevealStage(pulseNumber) {
@@ -708,6 +749,7 @@ async function playRevealSequence(
         to the matching generation's PNG.
     */
 
+    stopRevealAudio();
     revealPreviewSprite.alt =
         previewPokemon.name;
 
@@ -846,12 +888,12 @@ async function playRevealSequence(
 
 
     /*
-        UU, OU, and Uber get a longer pause before
+        OU and Uber get a longer pause before
         the final tone so the cadence feels like:
 
             1, 2... 3
 
-        Lower tiers keep the quicker standard cadence.
+        UU and lower keep the quicker standard cadence.
     */
 
     const finalToneDelay = getFinalToneDelay(highestTier);
@@ -883,7 +925,7 @@ async function playRevealSequence(
     revealOverlay.classList.add(
         "pokemon-revealed"
     );
-    if (special) playSpecialFlourish(special.className);
+    void playRevealAudio(previewPokemon);
 
     await sleep(360);
 
@@ -898,6 +940,7 @@ async function playRevealSequence(
     );
 
     await waitForContinue();
+    stopRevealAudio();
 
 
     /*
@@ -1437,13 +1480,13 @@ const FEATURED_RARE_UBERS = new Set([
     "groudonprimal", "zaciancrowned", "zacian", "zamazentacrowned", "solgaleo",
     "necrozmaduskmane", "necrozmadawnwings", "necrozmaultra", "kyogreprimal",
     "eternatus", "rayquaza", "blazikenmega", "lucariomega", "calyrexice",
-    "naganadel", "spectrier", "giratinaorigin", "gengarmega", "mewtwomegax", "mewtwomegay",
+    "naganadel", "spectrier", "giratinaorigin", "gengarmega", "mewtwomegax", "mewtwomegay", "marshadow", "zygarde", "zygardecomplete", "lunala",
     "arceus", ...["bug", "dark", "dragon", "electric", "fairy", "fighting", "fire",
         "flying", "ghost", "grass", "ground", "ice", "poison", "psychic", "rock", "steel", "water"]
         .map(type => "arceus" + type)
 ]);
 const RARE_OU_POKEMON = new Set([
-    "dragapult", "garchomp", "kingambit", "gholdengo", "ogerponwellspring", "zamazenta"
+    "dragapult", "garchomp", "kingambit", "gholdengo", "ogerponwellspring", "zamazenta", "volcarona", "kyurem", "raichumegay"
 ]);
 
 function isFeaturedPokemon(pokemon) {
@@ -1469,7 +1512,7 @@ function getRarityCategory(pokemon) {
 }
 
 function getFinalToneDelay(tier) {
-    return tier === "Uber" ? 1350 : (tier === "UU" || tier === "OU" ? 1100 : 650);
+    return tier === "Uber" ? 1350 : (tier === "OU" ? 1100 : 650);
 }
 
 function getPokemonPullWeight(pokemon) {
@@ -1698,8 +1741,8 @@ function simulateTeams(numberOfTeams = 10000) {
     const selectedOdds =
         oddsSelect.value;
 
-    const pokemonPool =
-        datasets[selectedPool];
+    const selectedType = selectedPool === "bananza" ? (typePoolSelect.value || "All") : "All";
+    const pokemonPool = getActivePokemonPool(selectedPool, selectedType);
 
 
     const tierCounts = {
@@ -1796,6 +1839,7 @@ function simulateTeams(numberOfTeams = 10000) {
         numberOfTeams,
         totalPokemon,
         selectedPool,
+        selectedType,
         selectedTier,
         selectedOdds,
         tierCounts,

@@ -53,7 +53,8 @@ const context = vm.createContext({
 const dataFiles = [
     ...Array.from({ length: 9 }, (_, index) => `gen${index + 1}.js`),
     "champions-ou.js",
-    "national-dex.js"
+    "national-dex.js",
+    "pokemon-details.js"
 ];
 for (const filename of dataFiles) {
     vm.runInContext(fs.readFileSync(path.join(root, "data", filename), "utf8"), context);
@@ -62,7 +63,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getPreviewPokemon, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -103,7 +104,7 @@ for (let gen = 1; gen <= 4; gen++) {
 assert.match(generator.getPokemonSpriteUrls("Mewtwo", 5)[0], /gen5ani\/mewtwo\.gif$/);
 assert.match(generator.getPokemonSpriteUrls("Mewtwo", 9)[0], /sprites\/ani\/mewtwo\.gif$/);
 assert.equal(generator.getFinalToneDelay("Uber") - generator.getFinalToneDelay("OU"), 250);
-assert.equal(generator.getFinalToneDelay("UU"), generator.getFinalToneDelay("OU"));
+assert.equal(generator.getFinalToneDelay("UU"), 650);
 
 // Keep probability-based colors and thresholds, restricted to OU and above.
 for (const tier of ["ZU", "PU", "NU", "RU", "UU"]) {
@@ -157,8 +158,8 @@ assert.equal((cards[2].innerHTML.match(/Featured rare Uber/g) || []).length, 1);
 cards.length = 0;
 
 // Exact forms, all Arceus types, and generation-dependent tier colors.
-assert.equal(generator.FEATURED_RARE_UBERS.size, 38);
-assert.equal(generator.RARE_OU_POKEMON.size, 6);
+assert.equal(generator.FEATURED_RARE_UBERS.size, 42);
+assert.equal(generator.RARE_OU_POKEMON.size, 9);
 for (const id of generator.FEATURED_RARE_UBERS) {
     assert.ok(Object.values(generator.datasets).some(pool => pool.some(p => p.id === id)), `Unknown featured form: ${id}`);
     assert.equal(generator.getSpecialPresentation({ id, tier: "Uber" }).color, "#DF00FF");
@@ -203,6 +204,46 @@ const mewtwoComparisons = ["gen1", "nationaldex", "bananza"].map(pool =>
     generator.getUpperPoolProbabilities(generator.datasets[pool], "Uber", "++").get("mewtwo"));
 assert.equal(new Set(mewtwoComparisons).size, 3);
 console.log("Mewtwo OU+ comparisons (Gen 1 / National Dex / Bananza, Uber++):", mewtwoComparisons.map(p => "1 in " + Math.round(1/p)).join(" / "));
+
+// Type filtering uses each exact form's modern typing, including either dual type.
+const types = ["Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying", "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water"];
+vm.runInContext('globalThis.details = POKEMON_DETAILS_DATA;', context);
+for (const type of types) {
+    const pool = generator.getActivePokemonPool("bananza", type);
+    assert.ok(pool.length >= 6, `Too few ${type} Pokemon`);
+    assert.ok(pool.every(p => context.details[p.id].modern.types.includes(type)));
+    for (const mode of ["--", "-", "=", "+", "++"]) {
+        const team = generator.generateTeam(pool, "Uber", mode);
+        assert.equal(new Set(team.map(p => p.id)).size, 6);
+        assert.ok(team.every(p => context.details[p.id].modern.types.includes(type)));
+        const benchmark = generator.getUpperPoolProbabilities(pool, "Uber", mode);
+        for (const p of team) assert.equal(p.upperPoolProbability, benchmark.get(p.id) ?? null);
+    }
+}
+assert.ok(generator.getActivePokemonPool("bananza", "Bug").some(p => p.id === "volcarona"));
+assert.ok(generator.getActivePokemonPool("bananza", "Fire").some(p => p.id === "volcarona"));
+assert.ok(generator.getActivePokemonPool("bananza", "Steel").some(p => p.id === "zaciancrowned"));
+assert.ok(!generator.getActivePokemonPool("bananza", "Steel").some(p => p.id === "zacian"));
+assert.ok(generator.getActivePokemonPool("bananza", "Psychic").some(p => p.id === "mewtwo"));
+assert.equal(generator.getActivePokemonPool("gen9", "Bug"), generator.datasets.gen9);
+element("pool-select").value = "bananza";
+element("type-pool-select").value = "Bug";
+generator.updateTierAvailability();
+assert.equal(element("type-pool-setting").hidden, false);
+context.checkSimulationPool = pool => assert.ok(pool.every(p => context.details[p.id].modern.types.includes("Bug")));
+vm.runInContext('const originalGenerateForTypeTest = generateTeam; generateTeam = (...args) => { checkSimulationPool(args[0]); return originalGenerateForTypeTest(...args); }; globalThis.generator.simulateTeams = simulateTeams;', context);
+const typeSimulation = generator.simulateTeams(10);
+vm.runInContext('generateTeam = originalGenerateForTypeTest;', context);
+assert.equal(typeSimulation.selectedType, "Bug");
+assert.equal(typeSimulation.totalPokemon, 60);
+element("pool-select").value = "gen9";
+generator.updateTierAvailability();
+assert.equal(element("type-pool-setting").hidden, true);
+for (const p of [{id:"garchomp",tier:"OU"},{id:"mewtwo",tier:"Uber"},{id:"zacian",tier:"Uber"},{id:"ag",sourceTier:"AG",tier:"Uber"}]) {
+    assert.equal(generator.shouldPlayRevealAudio(p), true);
+}
+assert.equal(generator.shouldPlayRevealAudio({id:"zapdos",tier:"OU"}), false);
+assert.equal(generator.shouldPlayRevealAudio({id:"volcarona",tier:"UU"}), false);
 
 // All selectable ceilings and modes must yield six eligible, distinct Pokemon.
 for (const [poolName, pool] of Object.entries(generator.datasets)) {
@@ -287,6 +328,7 @@ if (process.argv.includes("--simulate")) {
     context.window = { matchMedia: () => ({ matches: context.reducedMotion }) };
     context.revealSnapshots = [];
     context.oscillatorFrequencies = [];
+    context.sampleStarts = 0;
     context.takeSnapshot = () => context.revealSnapshots.push({
         classes: overlay.className, color: properties["--reveal-color"],
         label: element("reveal-special-label").textContent
@@ -295,8 +337,10 @@ if (process.argv.includes("--simulate")) {
         sleep = async () => {};
         waitForContinue = async () => takeSnapshot();
         prepareAudio = () => {};
+        revealAudioBufferPromise = Promise.resolve({});
         audioContext = {
             state: "running", currentTime: 0, destination: {},
+            createBufferSource() { return { connect() {}, start() { sampleStarts++; }, stop() {}, disconnect() {} }; },
             createOscillator() { return { frequency: { setValueAtTime(value) { oscillatorFrequencies.push(value); } }, connect() {}, start() {}, stop() {}, disconnect() {} }; },
             createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
         };
@@ -304,11 +348,13 @@ if (process.argv.includes("--simulate")) {
     for (const reduced of [false, true]) {
         context.reducedMotion = reduced;
         for (const [id, tier, color, label, notes] of [
-            ["zaciancrowned", "Uber", "#DF00FF", "Featured rare Uber", 10],
-            ["garchomp", "OU", "#800020", "Rare OU", 9],
-            ["mewtwo", "Uber", null, "", 6]
+            ["zaciancrowned", "Uber", "#DF00FF", "Featured rare Uber", 6],
+            ["garchomp", "OU", "#800020", "Rare OU", 6],
+            ["mewtwo", "Uber", null, "", 6],
+            ["zapdos", "OU", null, "", 6]
         ]) {
             context.oscillatorFrequencies.length = 0;
+            context.sampleStarts = 0;
             context.preview = { id, name: id, generation: 9, tier, upperPoolProbability: 0.00001 };
             await vm.runInContext('playRevealSequence(preview.tier, preview)', context);
             const snapshot = context.revealSnapshots.at(-1);
@@ -317,7 +363,15 @@ if (process.argv.includes("--simulate")) {
             else assert.ok(!snapshot.classes.includes('special-'));
             assert.equal(overlay.className, 'reveal-overlay');
             assert.equal(context.oscillatorFrequencies.length, reduced ? 0 : notes);
+            assert.equal(context.sampleStarts, !reduced && generator.shouldPlayRevealAudio(context.preview) ? 1 : 0);
         }
     }
-    console.log('PASS: curated reveal colors, normal/reduced-motion lifecycle, state reset, and distinct musical flourishes.');
+    // A late download must not start after the user has continued.
+    context.sampleStarts = 0;
+    vm.runInContext('revealAudioBufferPromise = new Promise(resolve => { globalThis.finishAudioLoad = resolve; });', context);
+    const delayedPlayback = vm.runInContext('playRevealAudio({tier:"Uber",id:"mewtwo"})', context);
+    vm.runInContext('stopRevealAudio(); finishAudioLoad({});', context);
+    await delayedPlayback;
+    assert.equal(context.sampleStarts, 0);
+    console.log('PASS: curated reveal colors, normal/reduced-motion lifecycle, state reset, and uploaded audio playback.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

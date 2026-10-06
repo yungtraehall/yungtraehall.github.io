@@ -43,7 +43,7 @@ function openPokemonDetails(pokemon) {
     const profile = selected?.status === "available" ? selected : record.modern;
     const category = getRarityCategory(pokemon);
     const poolNames = { gen1: "Generation 1", gen2: "Generation 2", gen3: "Generation 3", gen4: "Generation 4", gen5: "Generation 5", gen6: "Generation 6", gen7: "Generation 7", gen8: "Generation 8", gen9: "Generation 9", championsou: "Pokémon Champions OU", gen9championsou: "Pokémon Champions OU", gen9nationaldex: "National Dex", nationaldex: "National Dex", bananza: "Bananza" };
-    const poolLabel = poolNames[pokemon.selectedPool || pokemon.format] || `Generation ${selectedGeneration}`;
+    const poolLabel = (poolNames[pokemon.selectedPool || pokemon.format] || `Generation ${selectedGeneration}`) + (pokemon.selectedType && pokemon.selectedType !== "All" ? " · " + pokemon.selectedType : "");
     const rows = record.history.map((entry, index) => {
         const generation = index + 1;
         if (entry.status !== "available") {
