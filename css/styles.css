@@ -1473,6 +1473,8 @@ body.reveal-active {
     width: min(62%, 328px);
     aspect-ratio: 1;
     transform: translate(-50%, -50%) scale(.72);
+    border-radius: 50%;
+    overflow: hidden;
     color: var(--special-text);
     font-size: clamp(12px, 3vw, 15px);
     font-weight: 800;
@@ -1481,10 +1483,10 @@ body.reveal-active {
     text-transform: uppercase;
 }
 .reveal-type-sigil-glyph {
-    width: 100%;
-    height: 100%;
+    width: 82%;
+    height: 82%;
     position: absolute;
-    inset: 0;
+    inset: 9%;
     border: 2px solid var(--special-neon);
     border-radius: 50%;
     opacity: .48;
@@ -1494,9 +1496,9 @@ body.reveal-active {
 .reveal-type-sigil-label {
     position: absolute;
     z-index: 1;
-    top: -34px;
-    left: -10%;
-    width: 120%;
+    top: 9%;
+    left: 5%;
+    width: 90%;
     text-shadow: 0 0 14px var(--special-color), 0 2px 8px #000;
 }
 .reveal-type-sigil-glyph[data-type="fire"] {
@@ -1529,6 +1531,7 @@ body.reveal-active {
 .reveal-overlay.rare-reveal.rarity-revealed .portal-ring-one { animation: portal-spin 1.25s linear both; }
 .reveal-overlay.rare-reveal.rarity-revealed .portal-ring-two { animation: portal-spin-reverse 1.25s linear both; }
 .reveal-overlay.rare-reveal.pokemon-revealed .reveal-type-sigils { animation: sigil-arrival 1.1s ease-out both; }
+.reveal-overlay.rare-reveal.pokemon-revealed .reveal-type-sigil-label { animation: type-label-fade 1.1s ease-out both; }
 .reveal-overlay.special-ag.pokemon-revealed .special-shockwave { animation: ag-shockwave 1.1s cubic-bezier(.15,.65,.2,1) both; }
 @keyframes portal-arrival {
     0% { opacity: 0; transform: scale(.55) rotate(-18deg); }
@@ -1541,6 +1544,11 @@ body.reveal-active {
     0%, 20% { opacity: 0; transform: translate(-50%, -50%) scale(.52); }
     50% { opacity: .72; transform: translate(-50%, -50%) scale(1.04); }
     100% { opacity: .48; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes type-label-fade {
+    0%, 26% { opacity: 0; transform: translateY(7px); }
+    45% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-5px); }
 }
 @keyframes ag-shockwave {
     0% { opacity: 1; transform: translate(-50%, -50%) scale(.3); }
