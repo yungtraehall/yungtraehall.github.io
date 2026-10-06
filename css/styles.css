@@ -1312,9 +1312,19 @@ body.reveal-active {
 #maximum-tier-setting[hidden] { display:none; }
 .tier-ag { background:linear-gradient(135deg,#f0c85a,#d94b63 55%,#8b5cf6); color:#171218; }
 .pokemon-pull-rarity { margin-top:7px; padding:4px 9px; border:1px solid rgba(255,255,255,.18); border-radius:999px; font-size:11px; font-weight:700; color:#e7eaf0; background:rgba(255,255,255,.06); }
-.rarity-rare { color:#d6e7ff; border-color:rgba(91,160,255,.45); background:rgba(39,106,190,.18); }
-.rarity-very-rare { color:#f0d7ff; border-color:rgba(194,118,255,.55); background:rgba(118,56,159,.28); }
-.rarity-extremely-rare { color:#ffe7a6; border-color:rgba(255,214,112,.75); background:linear-gradient(110deg,rgba(174,113,30,.36),rgba(119,55,159,.32),rgba(174,113,30,.36)); box-shadow:0 0 12px rgba(248,194,73,.22); }
+/* Rarity colors follow slot probability; featured frames keep their own colors. */
+:is(.pokemon-pull-rarity, .reveal-pull-chance).rarity-common { --rarity-text:#d8eee6; --rarity-rgb:120,170,150; }
+:is(.pokemon-pull-rarity, .reveal-pull-chance).rarity-rare { --rarity-text:#d6e7ff; --rarity-rgb:91,160,255; }
+:is(.pokemon-pull-rarity, .reveal-pull-chance).rarity-very-rare { --rarity-text:#f0d7ff; --rarity-rgb:194,118,255; }
+:is(.pokemon-pull-rarity, .reveal-pull-chance).rarity-ultra-rare { --rarity-text:#ffe7a6; --rarity-rgb:255,214,112; }
+.pokemon-pull-rarity {
+    color:var(--rarity-text); border-color:rgba(var(--rarity-rgb),.55);
+    background:rgba(var(--rarity-rgb),.16);
+}
+.pokemon-pull-rarity.rarity-ultra-rare {
+    background:linear-gradient(110deg,rgba(174,113,30,.36),rgba(119,55,159,.32),rgba(174,113,30,.36));
+    box-shadow:0 0 12px rgba(248,194,73,.22);
+}
 .reveal-pull-chance {
     position: absolute;
     z-index: 6;
@@ -1324,19 +1334,19 @@ body.reveal-active {
     max-width: 420px;
     padding: 0 8px;
     box-sizing: border-box;
-    color: #ffe7a6;
+    color: var(--rarity-text);
     font-size: clamp(14px, 3.5vw, 18px);
     font-weight: 800;
     line-height: 1.25;
     letter-spacing: 0.04em;
     opacity: 0;
     transform: translate(-50%, 10px);
-    text-shadow: 0 0 16px rgba(248, 194, 73, 0.55);
+    text-shadow: 0 0 16px rgba(var(--rarity-rgb), 0.55);
     transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .reveal-overlay.pokemon-revealed .reveal-pull-chance { opacity:1; transform:translate(-50%,0); }
-.reveal-overlay.rarity-extremely-rare .reveal-orb { background:rgba(255,216,120,.13); box-shadow:0 0 45px rgba(255,196,73,.36),inset 0 0 30px rgba(255,255,255,.12); }
-.reveal-overlay.rarity-extremely-rare .reveal-preview-sprite { filter:brightness(0) drop-shadow(0 0 12px #fff0bb) drop-shadow(0 0 46px #e9b83f); }
+.reveal-overlay.rarity-ultra-rare .reveal-orb { background:rgba(255,216,120,.13); box-shadow:0 0 45px rgba(255,196,73,.36),inset 0 0 30px rgba(255,255,255,.12); }
+.reveal-overlay.rarity-ultra-rare .reveal-preview-sprite { filter:brightness(0) drop-shadow(0 0 12px #fff0bb) drop-shadow(0 0 46px #e9b83f); }
 
 
 /* Details remain available on every revealed team card. */
@@ -1399,11 +1409,6 @@ body.reveal-active {
     box-shadow: 0 0 16px color-mix(in srgb, var(--special-neon) 45%, transparent);
 }
 :is(.special-ou, .special-uber, .special-ag) .pokemon-category { color: var(--special-text); letter-spacing: .04em; }
-:is(.special-ou, .special-uber, .special-ag) .pokemon-pull-rarity {
-    color: var(--special-text); border-color: var(--special-neon);
-    background: color-mix(in srgb, var(--special-color) 28%, #1d2025);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--special-neon) 25%, transparent);
-}
 .special-reveal-frame, .special-reveal-halo, .reveal-special-label { opacity: 0; pointer-events: none; position: absolute; }
 .special-reveal-frame {
     z-index: 1; inset: 20% 8% 15%; border: 2px solid var(--special-color); border-radius: 28px;
@@ -1423,15 +1428,14 @@ body.reveal-active {
 .reveal-overlay:is(.special-ou, .special-uber, .special-ag).rarity-revealed .special-reveal-frame { opacity: 1; }
 .reveal-overlay:is(.special-ou, .special-uber, .special-ag).pokemon-revealed .reveal-special-label { opacity: 1; }
 .reveal-overlay:is(.special-ou, .special-uber, .special-ag).pokemon-revealed .special-reveal-halo { animation: special-halo 1.3s ease-out both; }
-.reveal-overlay:is(.special-ou, .special-uber, .special-ag) .reveal-pull-chance { color: var(--special-text); text-shadow: 0 0 14px var(--special-color); }
-.reveal-overlay:is(.special-ou, .special-uber, .special-ag).rarity-extremely-rare .reveal-orb {
+.reveal-overlay:is(.special-ou, .special-uber, .special-ag).rarity-ultra-rare .reveal-orb {
     background: color-mix(in srgb, var(--special-color) 15%, transparent);
     box-shadow: 0 0 45px var(--special-color), inset 0 0 30px rgba(255,255,255,.12);
 }
 .reveal-overlay:is(.special-ou, .special-uber, .special-ag).rarity-revealed .reveal-preview-sprite {
     filter: brightness(0) drop-shadow(0 0 12px var(--special-neon)) drop-shadow(0 0 40px var(--special-color));
 }
-.reveal-overlay.pokemon-revealed.rarity-extremely-rare .reveal-preview-sprite {
+.reveal-overlay.pokemon-revealed.rarity-ultra-rare .reveal-preview-sprite {
     filter: brightness(1) drop-shadow(0 0 18px #fff0bb) drop-shadow(0 0 46px #e9b83f);
 }
 .reveal-overlay:is(.special-ou, .special-uber, .special-ag).pokemon-revealed .reveal-preview-sprite {
@@ -1535,3 +1539,4 @@ body.reveal-active {
 
 #type-pool-setting[hidden] { display: none; }
 #type-pool-note { color: #bdcbe3; font-size: 12px; line-height: 1.4; max-width: 260px; }
+

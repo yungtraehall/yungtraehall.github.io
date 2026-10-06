@@ -18,13 +18,24 @@ This replaces the original baseline plus exponential strength modifier, which ga
 
 Lower maximum tiers remove stronger tier weights and normalize the remaining weights. A tier absent from the pool folds into the nearest weaker tier, or the nearest stronger tier if none exists below it. This preserves the previous handling of historical and Champions pools. A tier exhausted by selecting its last member rebalances among remaining tiers. Teams still contain six distinct Pokemon/forms.
 
-OU and Uber keep their existing individual usage adjustment. UU and lower are equal within their tiers. The tier increase therefore also increases the current individual OU and Uber chances. Displayed rarity compares the Pokémon only with eligible OU-and-above Pokémon in the selected pool and settings. It uses the full eligible pool before any team exclusions, so the same Pokémon has a stable number throughout a roll. Lower-tier species counts, weights, missing tiers, and previously drawn Pokémon do not enter this calculation. Displayed numbers are explicitly labelled “among OU+ pulls”; they are not the chance on any roll.
+OU and Uber keep their existing individual usage adjustment. UU and lower are equal within their tiers. The tier increase therefore also increases individual OU and Uber chances.
 
-The display calculation is `(tier profile weight / sum of present eligible OU+ tier profile weights) × (Pokémon weight / sum of Pokémon weights in its tier)`. Rare OU and Rare Uber keep their within-tier multipliers; AG remains inside Uber with its 0.10× multiplier. Maximum Tier and Odds settings apply. Pools with no eligible OU+ members have no comparison numbers.
+## Displayed rarity
 
-Rare (≤1%), Very Rare (≤0.1%), and Extremely Rare (≤0.01%) colors now use this upper-pool probability. Above 1%, an OU+ Pokémon still shows its comparison number without a qualitative rarity label. UU and below show neither. The separate `pullProbability` field retains the actual slot chance for the unchanged generator; `upperPoolProbability` supplies only the displayed comparison.
+OU, Uber, and AG show their actual draw-slot probability, formatted as a percentage: `Rare · 0.26% Chance` for a 1-in-392 chance. UU and below still show no rarity badge. This replaces the earlier comparison among OU+ pulls.
 
-For Mewtwo at Uber++, the baseline comparisons are approximately 1 in 15 in Gen 1, 1 in 466 in National Dex, and 1 in 469 in Bananza, among OU+ pulls.
+The probability is the product of the chance to select the Pokémon's tier and its weighted share of the remaining Pokémon in that tier. It uses the selected generation/pool, Bananza type filter, maximum tier, Odds setting, missing-tier folding, and exclusions from earlier picks in this team. It describes the chance at that particular draw, rather than the chance of obtaining the Pokémon anywhere in a six-Pokémon team. Generation stores `pullProbability` with each result; later dropdown changes do not relabel an already generated team. The generator's weights and random selections are unchanged.
+
+| Rarity | Actual slot chance | Badge color |
+| --- | --- | --- |
+| Common | ≥1% | Muted green |
+| Rare | ≥0.10% and <1% | Blue |
+| Very Rare | ≥0.01% and <0.10% | Purple |
+| Ultra Rare | <0.01% | Gold |
+
+Classifications use the unrounded probability. Percentages normally use two decimals; tiny chances retain significant digits so a positive chance never displays as zero. Extra precision is also kept whenever rounding would imply a different rarity level. Rarity colors appear on both result badges and the reveal odds line. The featured category's burgundy/magenta frames, labels, portal, and sounds remain separate from the probability-based badge. Category minimum labels are removed so changing Odds can move even a featured/AG Pokémon between rarity levels.
+
+At Uber++ in the first draw slot, Mewtwo has approximately 2.98% chance in Gen 1, 0.0966% in National Dex, and 0.0959% in Bananza. The last two both display `0.097% Chance` with a Very Rare label, while remaining distinct probabilities. Strengthening Odds increases the OU/Uber chances when those tiers compete with lower tiers. If a type filter leaves only one available tier, its share is already 100%, and changing tier Odds cannot increase it further.
 
 ## Individual rarity categories
 
@@ -62,3 +73,4 @@ Run the fast checks with `node tests/odds.test.cjs`.
 Run the requested 100,000-team simulation with `node tests/odds.test.cjs --simulate`. This loads the actual production datasets and generator, calls `simulateTeams(100000)` with Generation 9 / Uber / ++, and checks all tier percentages against the profile. It also checks every pool's valid ceiling/odds combinations, duplicate prevention, equal lower-tier weights, AG probability, and Bananza's ceiling behavior.
 
 The website console still supports `simulateTeams(100000)` using the current dropdown selections. Its returned report distinguishes Pokemon-slot percentages from the percentage of teams containing at least one Uber.
+

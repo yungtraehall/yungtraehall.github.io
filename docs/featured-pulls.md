@@ -30,11 +30,11 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 ## Presentation
 
 - Listed pulls have a matching tier badge, category label, colored card border,
-  and neon glow. Rarity labels still appear only at OU and above. The named
-  Rare OU/Uber categories have at least a Rare label, while AG has at least
-  Very Rare. The unchanged numeric thresholds may raise a label further. The
-  numbers are labelled “among OU+ pulls” and exclude every lower tier; category
-  minimums do not change the displayed probability or the actual roll odds.
+  and neon glow. Rarity badges appear only at OU and above and show the actual
+  percentage chance for that draw slot. Common, Rare, Very Rare, and Ultra Rare
+  labels and badge colors follow unrounded probability using the thresholds in
+  `odds-balancing.md`. Featured/AG categories do not impose a minimum label.
+  Featured frames remain burgundy/magenta independently of the rarity badge.
 - The reveal has a neon frame, a single expanding halo, a colored sprite glow,
   and a featured label. The odds stay above the orb with space above the label.
 - On every Rare OU, Uber, and AG pull, the colored portal begins as the
@@ -56,7 +56,7 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 - Within the strongest tier of the team, a listed Pokémon takes reveal priority.
   This is deterministic and does not reroll the team or alter its probabilities.
 - The reveal and card classes reset between pulls. The fully revealed sprite
-  stays visible even when the probability badge is Extremely Rare.
+  stays visible even when the probability badge is Ultra Rare.
 
 ## Validation
 
@@ -71,5 +71,6 @@ redistribute individual chances within each tier.
 Bananza has All types plus the 18 standard types. Each exact form is matched
 against the cached modern species typing; either type of a dual-type Pokémon
 qualifies. Type filtering applies to the generator, console simulations, and the
-OU+ comparison denominator. The result details retain the selected type even
+draw-slot probability calculation. The result details retain the selected type even
 if the dropdown later changes. Other pools ignore the hidden type selection.
+
