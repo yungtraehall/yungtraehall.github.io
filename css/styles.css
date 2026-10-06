@@ -1469,16 +1469,17 @@ body.reveal-active {
     box-shadow: 0 0 35px var(--special-color), inset 0 0 20px var(--special-color);
 }
 .reveal-type-text {
-    z-index: 6;
-    top: 9%;
+    z-index: 1;
+    top: 13%;
     left: 5%;
     width: 90%;
     color: var(--special-text);
-    font-size: clamp(12px, 3vw, 16px);
+    font-size: clamp(8px, 1.8vw, 10px);
     font-weight: 800;
-    letter-spacing: .1em;
+    letter-spacing: .06em;
     text-align: center;
     text-transform: uppercase;
+    white-space: nowrap;
     text-shadow: 0 0 14px var(--special-color), 0 2px 8px #000;
 }
 .reveal-overlay.rare-reveal.rarity-revealed .special-portal { animation: portal-arrival 1.25s ease-out both; }

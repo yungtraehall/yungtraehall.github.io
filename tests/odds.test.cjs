@@ -6,7 +6,7 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const revealMarkup = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const revealStyles = fs.readFileSync(path.join(root, "css", "styles.css"), "utf8");
-assert.match(revealMarkup, /id="reveal-type-text"/);
+assert.match(revealMarkup, /<div class="reveal-orb">\s*<div id="reveal-type-text"/);
 assert.doesNotMatch(revealMarkup, /reveal-type-sigil/);
 assert.match(revealStyles, /\.reveal-overlay\.rare-reveal\.pokemon-revealed \.reveal-type-text \{ animation: type-text-fade 1\.9s/);
 const tiers = ["ZU", "PU", "NU", "RU", "UU", "OU", "Uber"];
@@ -141,11 +141,17 @@ assert.equal(zapdosRarity.oddsText, "1 in 234");
 assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", upperPoolProbability: 0.1 }).label, "");
 assert.equal(generator.getRarityDetails({ id: "kyogre", tier: "Uber", upperPoolProbability: 0.00001 }).label, "Extremely Rare");
 assert.equal(generator.getRarityDetails({ id: "miraidon", tier: "Uber", sourceTier: "AG", upperPoolProbability: 0.00001 }).label, "Extremely Rare");
+assert.equal(generator.getRarityDetails({ id: "volcarona", tier: "OU", upperPoolProbability: 1 / 6 }).displayText, "Rare · 1 in 6 among OU+ pulls");
+assert.equal(generator.getRarityDetails({ id: "xerneas", tier: "Uber", sourceTier: "AG", upperPoolProbability: 1 / 296 }).displayText, "Very Rare · 1 in 296 among OU+ pulls");
+assert.equal(generator.getRarityDetails({ id: "zaciancrowned", tier: "Uber", upperPoolProbability: 1 / 84 }).label, "Rare");
+assert.equal(generator.getRarityDetails({ id: "araquanid", tier: "OU", upperPoolProbability: 1 / 4 }).label, "");
 
 // Render the reported examples using the real card renderer, not a copy of it.
 for (let index = 0; index < 3; index++) {
     const image = {};
-    cards.push({ innerHTML: "", classList: { add() {}, remove() {} },
+    const classes = new Set();
+    cards.push({ innerHTML: "", classes,
+        classList: { add(...names) { names.forEach(name => classes.add(name)); }, remove(...names) { names.forEach(name => classes.delete(name)); } },
         querySelector(selector) { return selector === ".pokemon-sprite" ? image : { addEventListener() {} }; }
     });
 }
@@ -161,6 +167,22 @@ assert.ok(cards[1].innerHTML.includes("Rare · 1 in 234"));
 assert.ok(cards[2].innerHTML.includes("Featured rare Uber"));
 assert.ok(cards[2].innerHTML.includes("Rare · 1 in 500"));
 assert.equal((cards[2].innerHTML.match(/Featured rare Uber/g) || []).length, 1);
+generator.renderTeam([
+    { id: "xerneas", name: "Xerneas", tier: "Uber", sourceTier: "AG", generation: 9, upperPoolProbability: 1 / 296 },
+    { id: "volcarona", name: "Volcarona", tier: "OU", generation: 9, upperPoolProbability: 1 / 6 },
+    { id: "ribombee", name: "Ribombee", tier: "RU", generation: 9 }
+]);
+assert.ok(cards[0].classes.has("special-ag"));
+assert.ok(cards[0].innerHTML.includes("Very Rare · 1 in 296"));
+assert.ok(cards[1].innerHTML.includes("Rare · 1 in 6"));
+generator.renderTeam([
+    { id: "ribombee", name: "Ribombee", tier: "RU", generation: 9 },
+    { id: "ribombee", name: "Ribombee", tier: "RU", generation: 9 },
+    { id: "ribombee", name: "Ribombee", tier: "RU", generation: 9 }
+]);
+assert.ok(!cards[0].classes.has("special-ag"));
+assert.ok(!cards[1].classes.has("special-ou"));
+assert.ok(!cards[0].innerHTML.includes("pokemon-pull-rarity"));
 cards.length = 0;
 
 // Exact forms, all Arceus types, and generation-dependent tier colors.

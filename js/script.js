@@ -396,6 +396,13 @@ function getRarityDetails(pokemon) {
     } else {
         label = ""; className = "rarity-standard";
     }
+    // The word also honors the named rare categories. The number remains the
+    // exact OU+ comparison for this pool and odds setting.
+    if (pokemon.sourceTier === "AG" && (label === "" || label === "Rare")) {
+        label = "Very Rare"; className = "rarity-very-rare";
+    } else if (getSpecialPresentation(pokemon) && !label) {
+        label = "Rare"; className = "rarity-rare";
+    }
     const oddsText = "1 in " + Math.round(1 / probability).toLocaleString();
     return { label, className, oddsText,
         displayText: (label ? label + " · " : "") + oddsText + " among OU+ pulls" };
@@ -413,7 +420,7 @@ function renderTeam(generatedPokemon) {
         const tierClass = "tier-" + tierLabel.toLowerCase();
         const rarity = getRarityDetails(pokemon);
         const special = getSpecialPresentation(pokemon);
-        pokemonCards[i].classList.remove("special-ou", "special-uber");
+        pokemonCards[i].classList.remove("special-ou", "special-uber", "special-ag");
         if (special) pokemonCards[i].classList.add(special.className);
 
 
@@ -445,7 +452,7 @@ function renderTeam(generatedPokemon) {
             </div>
             ${getRarityCategory(pokemon).label !== "Standard" ? `<div class="pokemon-category">${getRarityCategory(pokemon).label}</div>` : ""}
             <button class="pokemon-details-button" type="button" aria-label="Details for ${pokemon.name}">Details</button>
-            ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}" title="Comparison within the eligible OU-and-above pool at the selected odds setting, before team exclusions. Not the chance on any roll.">${rarity.displayText}</div>` : ""}
+            ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}" title="The rarity word also reflects curated Rare OU/Uber and AG status. The number compares eligible OU-and-above Pokémon in this pool at the selected odds setting, before team exclusions; it is not the chance on any roll.">${rarity.displayText}</div>` : ""}
         `;
 
         pokemonCards[i].querySelector(".pokemon-details-button").addEventListener("click", () => openPokemonDetails(pokemon));
