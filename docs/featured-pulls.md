@@ -4,8 +4,9 @@ The approved selection contains 51 exact forms: 42 from the Uber list (including
 all 18 Arceus types), and nine from the OU list. A listed Pokémon receives the
 treatment when its selected pool classifies it as OU, Uber, or AG. Its current
 tier controls color and weight: burgundy `#800020` and 0.75× for OU, magenta
-`#DF00FF` and 0.50× for Uber. AG retains 0.10× and uses the magenta treatment
-when the exact form is listed. UU and below remain ordinary pulls.
+`#DF00FF` and 0.50× for Uber. AG retains 0.10× and uses gold `#ffe7a6`
+for its cards, badges, portal, frame, glow, and reveal effects. UU and below
+keep ordinary tier styling while also displaying probability rarity badges.
 
 ## Approved Uber forms
 
@@ -30,19 +31,27 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 ## Presentation
 
 - Listed pulls have a matching tier badge, category label, colored card border,
-  and neon glow. Rarity badges appear only at OU and above and show the actual
+  and neon glow. Rarity badges appear on every Pokémon and show the actual
   percentage chance for that draw slot. Common, Rare, Very Rare, and Ultra Rare
   labels and badge colors follow unrounded probability using the thresholds in
   `odds-balancing.md`. Featured/AG categories do not impose a minimum label.
-  Featured frames remain burgundy/magenta independently of the rarity badge.
+  Featured frames remain burgundy/magenta/gold independently of the rarity badge.
 - The reveal has a neon frame, a single expanding halo, a colored sprite glow,
-  and a featured label. The odds stay above the orb with space above the label.
+  and a featured label. The screenshot-based layout puts the percentage rarity
+  above a centered orb, name at the lower left, usage at the lower right, and
+  tier and Continue below. Font sizes adapt to narrower screens.
+- Usage displays the exact form's rank, generated-tier ladder, percentage, and
+  snapshot date (e.g. Kyurem: `Rank #74 · Gen5OU`, `1.516% Usage · 2016-03`,
+  or `Rank #12 · Gen9OU`, `12.023% Usage · 2026-08`). It uses that tier's
+  history record, not an unrelated OU/Uber export. National Dex and Bananza
+  lack matching records and explicitly show unavailable usage. Champions uses
+  its own cached OU ladder only for OU Pokémon. No missing usage is shown as zero.
 - On every Rare OU, Uber, and AG pull, the colored portal begins as the
   silhouette appears. When the name and full sprite resolve, a transparent
   full typing appears as translucent text (for example, `Bug ◆ Steel`) in front
   of the sprite, within a circular layer aligned to the orb, and fades out
   slowly after the full sprite appears. Type sigils are omitted.
-  AG keeps its larger magenta shockwave as an extra flourish.
+  AG keeps its larger gold shockwave as an extra flourish.
 - Rare OU opens a thin burgundy rift behind the silhouette; it seals as the
   full sprite and name appear. Every Uber, including AG, gets 12 soft rising
   stardust particles for up to 2.6 seconds after the full reveal. Both groups
@@ -71,7 +80,7 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 `node tests/odds.test.cjs --simulate` checks every approved ID against the actual
 pools, all rarity thresholds, exact-form exclusions, tier-dependent colors and
 weights, preview priority, normal/reduced-motion reveal reset, uploaded audio eligibility/cancellation. It also runs the production 100,000-team Generation 9 Uber++ simulation.
-The tier totals remain approximately 7.04% Uber and 37.94% OU; the new lists
+The latest tier totals are approximately 7.04% Uber, 37.83% OU, and 25.13% UU; the lists
 redistribute individual chances within each tier.
 
 ## Bananza type pools
