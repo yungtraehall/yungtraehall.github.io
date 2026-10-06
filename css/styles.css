@@ -1437,7 +1437,7 @@ body.reveal-active {
 .reveal-overlay:is(.special-ou, .special-uber, .special-ag).pokemon-revealed .reveal-preview-sprite {
     filter: brightness(1) drop-shadow(0 0 14px var(--special-neon)) drop-shadow(0 0 38px var(--special-color));
 }
-.special-portal, .special-crystal, .special-shockwave, .reveal-type-sigils {
+.special-portal, .special-crystal, .special-shockwave, .reveal-type-text {
     opacity: 0;
     pointer-events: none;
     position: absolute;
@@ -1468,72 +1468,23 @@ body.reveal-active {
     transform: translate(-50%, -50%) scale(.3);
     box-shadow: 0 0 35px var(--special-color), inset 0 0 20px var(--special-color);
 }
-.reveal-type-sigils {
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    overflow: hidden;
+.reveal-type-text {
+    z-index: 6;
+    top: 9%;
+    left: 5%;
+    width: 90%;
     color: var(--special-text);
-    font-size: clamp(12px, 3vw, 15px);
+    font-size: clamp(12px, 3vw, 16px);
     font-weight: 800;
-    letter-spacing: .12em;
+    letter-spacing: .1em;
     text-align: center;
     text-transform: uppercase;
-}
-.reveal-type-sigil-glyph {
-    width: 82%;
-    height: 82%;
-    position: absolute;
-    inset: 9%;
-    border: 2px solid var(--special-neon);
-    border-radius: 50%;
-    opacity: .48;
-    box-shadow: 0 0 20px var(--special-color), inset 0 0 28px color-mix(in srgb, var(--special-color) 42%, transparent);
-}
-.reveal-type-sigil-glyph::before, .reveal-type-sigil-glyph::after { content: ""; position: absolute; }
-.reveal-type-sigil-label {
-    position: absolute;
-    z-index: 1;
-    top: 17%;
-    left: 9%;
-    width: 82%;
-    font-size: clamp(8px, 1.8vw, 9px);
-    letter-spacing: .05em;
-    white-space: nowrap;
     text-shadow: 0 0 14px var(--special-color), 0 2px 8px #000;
-}
-.reveal-type-sigil-glyph[data-type="fire"] {
-    border-color: #ffc14d;
-    background: radial-gradient(circle at 50% 67%, #fff2a0 0 12%, #ff9d1c 24%, #d41d18 52%, transparent 54%);
-    box-shadow: 0 0 18px #ff5a24, inset 0 0 16px #8b100c;
-}
-.reveal-type-sigil-glyph[data-type="fire"]::before {
-    inset: 11% 23% 15%;
-    background: linear-gradient(145deg, #fff7ac 5%, #ffb21d 40%, #e72d14 72%);
-    clip-path: polygon(52% 0, 78% 34%, 88% 55%, 68% 100%, 27% 91%, 8% 58%, 27% 45%, 34% 18%);
-    filter: drop-shadow(0 0 8px #ff4b1f);
-}
-.reveal-type-sigil-glyph[data-type="bug"] {
-    border-color: #e6ffa4;
-    background: radial-gradient(circle, rgba(230,255,164,.22) 0 7%, transparent 8%), repeating-radial-gradient(circle, transparent 0 12%, rgba(229,255,165,.5) 13% 15%, transparent 16% 25%);
-    box-shadow: 0 0 18px #9ed341, inset 0 0 16px rgba(113,161,37,.7);
-}
-.reveal-type-sigil-glyph[data-type="bug"]::before {
-    inset: 2px;
-    border-radius: 50%;
-    background: repeating-conic-gradient(from 0deg, transparent 0 27deg, rgba(235,255,181,.95) 28deg 31deg, transparent 32deg 45deg);
-    mask: radial-gradient(circle, transparent 0 7%, #000 8%);
-}
-.reveal-type-sigil-glyph[data-type="bug"]::after {
-    width: 9px; height: 9px; left: 50%; top: 50%; border-radius: 50%;
-    background: #f1ffd1; transform: translate(-50%, -50%); box-shadow: 0 0 8px #e6ffa4;
 }
 .reveal-overlay.rare-reveal.rarity-revealed .special-portal { animation: portal-arrival 1.25s ease-out both; }
 .reveal-overlay.rare-reveal.rarity-revealed .portal-ring-one { animation: portal-spin 1.25s linear both; }
 .reveal-overlay.rare-reveal.rarity-revealed .portal-ring-two { animation: portal-spin-reverse 1.25s linear both; }
-.reveal-overlay.rare-reveal.pokemon-revealed .reveal-type-sigils { animation: sigil-arrival 1.1s ease-out both; }
-.reveal-overlay.rare-reveal.pokemon-revealed .reveal-type-sigil-label { animation: type-label-fade 1.1s ease-out both; }
+.reveal-overlay.rare-reveal.pokemon-revealed .reveal-type-text { animation: type-text-fade 1.9s ease-out both; }
 .reveal-overlay.special-ag.pokemon-revealed .special-shockwave { animation: ag-shockwave 1.1s cubic-bezier(.15,.65,.2,1) both; }
 @keyframes portal-arrival {
     0% { opacity: 0; transform: scale(.55) rotate(-18deg); }
@@ -1542,15 +1493,10 @@ body.reveal-active {
 }
 @keyframes portal-spin { to { transform: rotate(290deg) scale(1.34); } }
 @keyframes portal-spin-reverse { to { transform: rotate(-360deg) scale(.75); } }
-@keyframes sigil-arrival {
-    0%, 20% { opacity: 0; transform: scale(.52); }
-    50% { opacity: .72; transform: scale(1.04); }
-    100% { opacity: .48; transform: scale(1); }
-}
-@keyframes type-label-fade {
-    0%, 26% { opacity: 0; transform: translateY(7px); }
-    45% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-5px); }
+@keyframes type-text-fade {
+    0%, 12% { opacity: 0; transform: translateY(8px); }
+    30%, 56% { opacity: .95; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-6px); }
 }
 @keyframes ag-shockwave {
     0% { opacity: 1; transform: translate(-50%, -50%) scale(.3); }
@@ -1561,8 +1507,9 @@ body.reveal-active {
     100% { opacity: 0; transform: translate(-50%, -50%) scale(1.65); }
 }
 @media (prefers-reduced-motion: reduce) {
-    .special-reveal-frame, .special-reveal-halo, .reveal-special-label, .special-portal, .special-crystal, .special-shockwave, .reveal-type-sigils { animation: none !important; transition: none !important; }
-    .special-reveal-halo, .special-portal, .special-crystal, .special-shockwave, .reveal-type-sigils { display: none; }
+    .special-reveal-frame, .special-reveal-halo, .reveal-special-label, .special-portal, .special-crystal, .special-shockwave, .reveal-type-text { animation: none !important; transition: none !important; }
+    .special-reveal-halo, .special-portal, .special-crystal, .special-shockwave { display: none; }
+    .reveal-overlay.rare-reveal .reveal-type-text { opacity: .95; transform: none; }
 }
 .special-uber .pokemon-tier, .special-uber .reveal-tier-name { color: #210025; }
 .reveal-overlay:is(.special-ou, .special-uber, .special-ag) .reveal-pull-chance { top: 3%; }

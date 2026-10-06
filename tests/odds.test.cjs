@@ -6,9 +6,9 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const revealMarkup = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const revealStyles = fs.readFileSync(path.join(root, "css", "styles.css"), "utf8");
-assert.match(revealMarkup, /<div class="reveal-orb">\s*<div id="reveal-type-sigils"/);
-assert.match(revealStyles, /\.reveal-orb\s*\{[^}]*overflow:\s*hidden;/);
-assert.match(revealStyles, /\.reveal-type-sigils\s*\{[^}]*inset:\s*0;[^}]*width:\s*100%;[^}]*height:\s*100%/);
+assert.match(revealMarkup, /id="reveal-type-text"/);
+assert.doesNotMatch(revealMarkup, /reveal-type-sigil/);
+assert.match(revealStyles, /\.reveal-overlay\.rare-reveal\.pokemon-revealed \.reveal-type-text \{ animation: type-text-fade 1\.9s/);
 const tiers = ["ZU", "PU", "NU", "RU", "UU", "OU", "Uber"];
 const elements = new Map();
 const cards = [];
@@ -69,7 +69,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getRevealTypes, getRevealPrimaryType, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getRevealTypes, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -181,9 +181,6 @@ for (const id of ["kyogre", "groudon", "mewtwo", "rayquazamega", "garchompmega",
 assert.equal(generator.getSpecialPresentation({ id: "garchomp", tier: "Uber" }).color, "#DF00FF");
 assert.equal(generator.getSpecialPresentation({ id: "spectrier", tier: "OU" }).color, "#800020");
 assert.equal(generator.getSpecialPresentation({ id: "garchomp", tier: "UU" }), null);
-assert.equal(generator.getRevealPrimaryType({ id: "volcarona" }), "Bug");
-assert.equal(generator.getRevealPrimaryType({ id: "garchomp" }), "Dragon");
-assert.equal(generator.getRevealPrimaryType({ id: "unknown" }), "");
 assert.deepEqual([...generator.getRevealTypes({ id: "volcarona" })], ["Bug", "Fire"]);
 assert.deepEqual([...generator.getRevealTypes({ id: "garchomp" })], ["Dragon", "Ground"]);
 assert.equal(generator.getSpecialPresentation({ id: "koraidon", tier: "Uber", sourceTier: "AG" }).className, "special-ag");
@@ -344,8 +341,7 @@ if (process.argv.includes("--simulate")) {
     context.takeSnapshot = () => context.revealSnapshots.push({
         classes: overlay.className, color: properties["--reveal-color"],
         label: element("reveal-special-label").textContent,
-        sigil: element("reveal-type-sigil-label").textContent,
-        sigilType: element("reveal-type-sigil-glyph").dataset.type
+        typeText: element("reveal-type-text").textContent
     });
     vm.runInContext(`
         sleep = async () => {};
@@ -375,9 +371,8 @@ if (process.argv.includes("--simulate")) {
             const snapshot = context.revealSnapshots.at(-1);
             assert.equal(snapshot.label, label);
             const shouldHaveEffect = generator.shouldPlayRevealAudio(context.preview);
-            assert.equal(snapshot.sigil, shouldHaveEffect ? generator.getRevealTypes(context.preview).join(" ◆ ") : "");
-            assert.equal(snapshot.sigilType, shouldHaveEffect ? generator.getRevealPrimaryType(context.preview).toLowerCase() : "");
-            if (!reduced && shouldHaveEffect) assert.ok(snapshot.classes.includes("rare-reveal"));
+            assert.equal(snapshot.typeText, shouldHaveEffect ? generator.getRevealTypes(context.preview).join(" ◆ ") : "");
+            if (shouldHaveEffect) assert.ok(snapshot.classes.includes("rare-reveal"));
             if (color) assert.equal(snapshot.color, color);
             else assert.ok(!snapshot.classes.includes('special-'));
             assert.equal(overlay.className, 'reveal-overlay');
