@@ -175,9 +175,9 @@ assert.ok(!cards[0].innerHTML.includes("pokemon-pull-rarity"));
 assert.ok(cards[1].innerHTML.includes("pokemon-pull-rarity rarity-rare"));
 assert.ok(!cards[0].innerHTML.includes("1 in 1,763"));
 assert.ok(cards[1].innerHTML.includes("Rare · 0.43% Chance"));
-assert.ok(cards[2].innerHTML.includes("Featured rare Uber"));
+assert.ok(cards[2].innerHTML.includes("Feature Rare Uber"));
 assert.ok(cards[2].innerHTML.includes("Rare · 0.20% Chance"));
-assert.equal((cards[2].innerHTML.match(/Featured rare Uber/g) || []).length, 1);
+assert.equal((cards[2].innerHTML.match(/Feature Rare Uber/g) || []).length, 1);
 generator.renderTeam([
     { id: "xerneas", name: "Xerneas", tier: "Uber", sourceTier: "AG", generation: 9, pullProbability: 1 / 296 },
     { id: "volcarona", name: "Volcarona", tier: "OU", generation: 9, pullProbability: 1 / 6 },
@@ -424,7 +424,7 @@ if (process.argv.includes("--simulate")) {
     for (const reduced of [false, true]) {
         context.reducedMotion = reduced;
         for (const [id, tier, color, label, notes, sourceTier] of [
-            ["zaciancrowned", "Uber", "#DF00FF", "Featured rare Uber", 6],
+            ["zaciancrowned", "Uber", "#DF00FF", "Feature Rare Uber", 6],
             ["garchomp", "OU", "#800020", "Rare OU", 6],
             ["koraidon", "Uber", "#DF00FF", "Anything Goes", 6, "AG"],
             ["mewtwo", "Uber", null, "", 6],

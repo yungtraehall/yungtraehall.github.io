@@ -1531,7 +1531,7 @@ function getSpecialPresentation(pokemon) {
     }
     if (!isFeaturedPokemon(pokemon)) return null;
     if (pokemon.tier === "Uber" || pokemon.sourceTier === "AG") {
-        return { className: "special-uber", color: "#DF00FF", label: pokemon.sourceTier === "AG" ? "Featured AG" : "Featured rare Uber" };
+        return { className: "special-uber", color: "#DF00FF", label: pokemon.sourceTier === "AG" ? "Featured AG" : "Feature Rare Uber" };
     }
     if (pokemon.tier === "OU") {
         return { className: "special-ou", color: "#800020", label: "Rare OU" };
