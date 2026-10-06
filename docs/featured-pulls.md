@@ -35,12 +35,11 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
   are labelled “among OU+ pulls” and exclude every lower tier.
 - The reveal has a neon frame, a single expanding halo, a colored sprite glow,
   and a featured label. The odds stay above the orb with space above the label.
-- After the uploaded audio finishes, Rare OU opens a burgundy portal while its
-  exact Pokémon types appear as sigils; Featured rare Uber breaks through a
-  magenta crystal with expanding aura rings; and AG uses a larger magenta
-  shockwave and frame flash. The reveal waits for audio decoding and playback
-  before starting this payoff, so a slow initial download cannot make it fire
-  early.
+- On every Rare OU, Uber, and AG pull, the colored portal begins as the
+  silhouette appears. When the name and full sprite resolve, its sigil appears
+  with the Pokémon's first type only. Fire uses a flame crest and Bug uses a
+  spiderweb; other types use the shared rune until their custom sigils are
+  added. AG keeps its larger magenta shockwave as an extra flourish.
 - Rare OU, any Uber (ordinary or featured), and AG play the user-supplied
   `audio/rare-reveal.wav` when the Pokémon appears. This replaces the synthesized
   flourishes. The 2.936-second WAV is copied unchanged from the latest attachment,

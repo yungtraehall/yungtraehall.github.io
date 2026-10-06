@@ -1455,17 +1455,6 @@ body.reveal-active {
     box-shadow: 0 0 26px var(--special-color), inset 0 0 18px color-mix(in srgb, var(--special-color) 42%, transparent);
 }
 .portal-ring-two { width: 45%; border-style: dashed; }
-.special-crystal {
-    z-index: 5;
-    left: 50%;
-    top: 43%;
-    width: min(160px, 34vw);
-    aspect-ratio: 1;
-    clip-path: polygon(50% 0%, 94% 23%, 100% 68%, 50% 100%, 0 68%, 6% 23%);
-    transform: translate(-50%, -50%) scale(.2);
-    background: linear-gradient(135deg, rgba(255,255,255,.94), var(--special-neon) 28%, var(--special-color) 72%, rgba(0,0,0,.15));
-    box-shadow: 0 0 30px var(--special-neon), 0 0 70px var(--special-color);
-}
 .special-shockwave {
     z-index: 4;
     left: 50%;
@@ -1479,25 +1468,60 @@ body.reveal-active {
 }
 .reveal-type-sigils {
     z-index: 7;
-    top: 24%;
+    top: 18%;
     left: 5%;
     width: 90%;
     color: var(--special-text);
-    font-size: clamp(14px, 4vw, 20px);
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    font-size: clamp(12px, 3vw, 15px);
     font-weight: 800;
     letter-spacing: .12em;
     text-align: center;
     text-transform: uppercase;
     text-shadow: 0 0 16px var(--special-color);
 }
-.reveal-overlay.special-ou.special-climax .special-portal { animation: portal-arrival 1.2s ease-out both; }
-.reveal-overlay.special-ou.special-climax .portal-ring-one { animation: portal-spin 1.2s linear both; }
-.reveal-overlay.special-ou.special-climax .portal-ring-two { animation: portal-spin-reverse 1.2s linear both; }
-.reveal-overlay.special-ou.special-climax .reveal-type-sigils { animation: sigil-arrival 1.2s ease-out both; }
-.reveal-overlay.special-uber.special-climax .special-crystal { animation: crystal-break 1.2s cubic-bezier(.2,.8,.2,1) both; }
-.reveal-overlay.special-uber.special-climax .special-reveal-halo { animation: aura-rings 1.2s ease-out both; }
-.reveal-overlay.special-ag.special-climax .special-shockwave { animation: ag-shockwave 1.25s cubic-bezier(.15,.65,.2,1) both; }
-.reveal-overlay.special-ag.special-climax .special-reveal-frame { animation: ag-frame-flash 1.25s ease-out both; }
+.reveal-type-sigil-glyph {
+    width: clamp(48px, 12vw, 72px);
+    aspect-ratio: 1;
+    position: relative;
+    border: 2px solid var(--special-neon);
+    border-radius: 50%;
+    box-shadow: 0 0 13px var(--special-color), inset 0 0 16px color-mix(in srgb, var(--special-color) 42%, transparent);
+}
+.reveal-type-sigil-glyph::before, .reveal-type-sigil-glyph::after { content: ""; position: absolute; }
+.reveal-type-sigil-glyph[data-type="fire"] {
+    border-color: #ffc14d;
+    background: radial-gradient(circle at 50% 67%, #fff2a0 0 12%, #ff9d1c 24%, #d41d18 52%, transparent 54%);
+    box-shadow: 0 0 18px #ff5a24, inset 0 0 16px #8b100c;
+}
+.reveal-type-sigil-glyph[data-type="fire"]::before {
+    inset: 11% 23% 15%;
+    background: linear-gradient(145deg, #fff7ac 5%, #ffb21d 40%, #e72d14 72%);
+    clip-path: polygon(52% 0, 78% 34%, 88% 55%, 68% 100%, 27% 91%, 8% 58%, 27% 45%, 34% 18%);
+    filter: drop-shadow(0 0 8px #ff4b1f);
+}
+.reveal-type-sigil-glyph[data-type="bug"] {
+    border-color: #e6ffa4;
+    background: radial-gradient(circle, rgba(230,255,164,.22) 0 7%, transparent 8%), repeating-radial-gradient(circle, transparent 0 12%, rgba(229,255,165,.5) 13% 15%, transparent 16% 25%);
+    box-shadow: 0 0 18px #9ed341, inset 0 0 16px rgba(113,161,37,.7);
+}
+.reveal-type-sigil-glyph[data-type="bug"]::before {
+    inset: 2px;
+    border-radius: 50%;
+    background: repeating-conic-gradient(from 0deg, transparent 0 27deg, rgba(235,255,181,.95) 28deg 31deg, transparent 32deg 45deg);
+    mask: radial-gradient(circle, transparent 0 7%, #000 8%);
+}
+.reveal-type-sigil-glyph[data-type="bug"]::after {
+    width: 9px; height: 9px; left: 50%; top: 50%; border-radius: 50%;
+    background: #f1ffd1; transform: translate(-50%, -50%); box-shadow: 0 0 8px #e6ffa4;
+}
+.reveal-overlay.rare-reveal.rarity-revealed .special-portal { animation: portal-arrival 1.25s ease-out both; }
+.reveal-overlay.rare-reveal.rarity-revealed .portal-ring-one { animation: portal-spin 1.25s linear both; }
+.reveal-overlay.rare-reveal.rarity-revealed .portal-ring-two { animation: portal-spin-reverse 1.25s linear both; }
+.reveal-overlay.rare-reveal.pokemon-revealed .reveal-type-sigils { animation: sigil-arrival 1.1s ease-out both; }
+.reveal-overlay.special-ag.pokemon-revealed .special-shockwave { animation: ag-shockwave 1.1s cubic-bezier(.15,.65,.2,1) both; }
 @keyframes portal-arrival {
     0% { opacity: 0; transform: scale(.55) rotate(-18deg); }
     28% { opacity: 1; }
@@ -1510,24 +1534,9 @@ body.reveal-active {
     50% { opacity: 1; transform: translateY(0); }
     100% { opacity: 0; transform: translateY(-10px); }
 }
-@keyframes crystal-break {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(-15deg); }
-    32% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
-    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.13) rotate(5deg); filter: brightness(1.7); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4) rotate(-24deg); filter: brightness(2); }
-}
-@keyframes aura-rings {
-    0% { opacity: .9; transform: translate(-50%, -50%) scale(.55); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(2.35); }
-}
 @keyframes ag-shockwave {
     0% { opacity: 1; transform: translate(-50%, -50%) scale(.3); }
     100% { opacity: 0; transform: translate(-50%, -50%) scale(7); }
-}
-@keyframes ag-frame-flash {
-    0%, 35% { opacity: .35; transform: scale(.95); }
-    55% { opacity: 1; transform: scale(1.02); }
-    100% { opacity: 0; transform: scale(1.08); }
 }
 @keyframes special-halo {
     0% { opacity: .8; transform: translate(-50%, -50%) scale(.75); }
