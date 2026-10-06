@@ -64,7 +64,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
     generateTeam, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getRevealPrimaryType, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getUpperPoolProbabilities, getSpecialPresentation, getRevealTypes, getRevealPrimaryType, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 
@@ -179,6 +179,8 @@ assert.equal(generator.getSpecialPresentation({ id: "garchomp", tier: "UU" }), n
 assert.equal(generator.getRevealPrimaryType({ id: "volcarona" }), "Bug");
 assert.equal(generator.getRevealPrimaryType({ id: "garchomp" }), "Dragon");
 assert.equal(generator.getRevealPrimaryType({ id: "unknown" }), "");
+assert.deepEqual([...generator.getRevealTypes({ id: "volcarona" })], ["Bug", "Fire"]);
+assert.deepEqual([...generator.getRevealTypes({ id: "garchomp" })], ["Dragon", "Ground"]);
 assert.equal(generator.getSpecialPresentation({ id: "koraidon", tier: "Uber", sourceTier: "AG" }).className, "special-ag");
 assert.equal(generator.getRarityCategory({ id: "arceus", tier: "Uber", sourceTier: "AG" }).multiplier, 0.1);
 assert.equal(generator.getPreviewPokemon([{id:"mewtwo",tier:"Uber"},{id:"zacian",tier:"Uber"}]).id, "zacian");
@@ -368,7 +370,7 @@ if (process.argv.includes("--simulate")) {
             const snapshot = context.revealSnapshots.at(-1);
             assert.equal(snapshot.label, label);
             const shouldHaveEffect = generator.shouldPlayRevealAudio(context.preview);
-            assert.equal(snapshot.sigil, shouldHaveEffect ? generator.getRevealPrimaryType(context.preview) : "");
+            assert.equal(snapshot.sigil, shouldHaveEffect ? generator.getRevealTypes(context.preview).join(" ◆ ") : "");
             assert.equal(snapshot.sigilType, shouldHaveEffect ? generator.getRevealPrimaryType(context.preview).toLowerCase() : "");
             if (!reduced && shouldHaveEffect) assert.ok(snapshot.classes.includes("rare-reveal"));
             if (color) assert.equal(snapshot.color, color);

@@ -36,10 +36,12 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 - The reveal has a neon frame, a single expanding halo, a colored sprite glow,
   and a featured label. The odds stay above the orb with space above the label.
 - On every Rare OU, Uber, and AG pull, the colored portal begins as the
-  silhouette appears. When the name and full sprite resolve, its sigil appears
-  with the Pokémon's first type only. Fire uses a flame crest and Bug uses a
-  spiderweb; other types use the shared rune until their custom sigils are
-  added. AG keeps its larger magenta shockwave as an extra flourish.
+  silhouette appears. When the name and full sprite resolve, a transparent
+  sigil fills the orb behind it, while the full typing remains readable in
+  text (for example, `Bug ◆ Steel`). The visual sigil uses only the first type:
+  Fire uses a flame crest and Bug uses a spiderweb; other types use the shared
+  rune until their custom sigils are added. AG keeps its larger magenta
+  shockwave as an extra flourish.
 - Rare OU, any Uber (ordinary or featured), and AG play the user-supplied
   `audio/rare-reveal.wav` when the Pokémon appears. This replaces the synthesized
   flourishes. The 2.936-second WAV is copied unchanged from the latest attachment,
