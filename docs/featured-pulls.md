@@ -38,8 +38,9 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 - On every Rare OU, Uber, and AG pull, the colored portal begins as the
   silhouette appears. When the name and full sprite resolve, a transparent
   sigil fills the orb behind it, while the full typing appears inside the top
-  of that orb (for example, `Bug ◆ Steel`) before fading away. The orb clips
-  both elements so they cannot spill into the reveal stage. The visual sigil
+  of that orb (for example, `Bug ◆ Steel`) before fading away. The type layers
+  are nested inside the visible orb itself, which clips them to its exact edge
+  even while the orb expands. The visual sigil
   uses only the first type: Fire uses a flame crest and Bug uses a spiderweb;
   other types use the shared rune until their custom sigils are added. AG
   keeps its larger magenta shockwave as an extra flourish.

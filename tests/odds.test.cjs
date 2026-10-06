@@ -4,6 +4,11 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
+const revealMarkup = fs.readFileSync(path.join(root, "index.html"), "utf8");
+const revealStyles = fs.readFileSync(path.join(root, "css", "styles.css"), "utf8");
+assert.match(revealMarkup, /<div class="reveal-orb">\s*<div id="reveal-type-sigils"/);
+assert.match(revealStyles, /\.reveal-orb\s*\{[^}]*overflow:\s*hidden;/);
+assert.match(revealStyles, /\.reveal-type-sigils\s*\{[^}]*inset:\s*0;[^}]*width:\s*100%;[^}]*height:\s*100%/);
 const tiers = ["ZU", "PU", "NU", "RU", "UU", "OU", "Uber"];
 const elements = new Map();
 const cards = [];
