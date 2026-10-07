@@ -79,8 +79,11 @@ Actual draw-slot percentages and rarity colors use the revised weights.
   randomness. Playback and reverb stop on Continue; late loads cannot play.
   Downloads abort after four seconds, and the third tone waits at most 250 ms
   for the preload. A failed or slow cry uses the normal third tone. There is
-  no second sound when the full sprite appears. Ordinary OU and UU/below retain
-  all three normal tones. The obsolete uploaded WAV effects are removed.
+  no extra cry when the full sprite appears. At the full reveal, the original
+  `audio/rare-reveal.wav` effect (restored from `KSIExplosionVerb.wav`) also
+  plays at its previous 0.55 gain. Both sounds stop on Continue. Ordinary OU
+  and UU/below retain all three normal tones and no reveal effect. The three
+  newer uploaded WAV effects remain removed.
 - UU uses the normal 650 ms final-tone spacing. OU keeps 1,100 ms and Uber keeps
   1,350 ms (250 ms beyond OU).
 - Reduced motion uses a static frame and glow, with no portal, crystal,

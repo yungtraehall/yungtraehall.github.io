@@ -140,6 +140,7 @@ const revealTierColors = {
 
 let revealInProgress = false;
 let audioContext = null;
+let revealExplosionBufferPromise = null;
 // Verified against Showdown's MP3 directory. Forms without distinct recordings
 // deliberately share their species cry (e.g. Arceus types and Ogerpon masks).
 const pokemonCryNames = {
@@ -282,7 +283,7 @@ const pokemonCryNames = {
 };
 const revealCryBuffers = new Map();
 let revealReverbBuffer = null;
-let activeRevealAudio = null;
+const activeRevealAudios = new Set();
 let revealAudioToken = 0;
 const typePoolSelect = document.getElementById("type-pool-select");
 const typePoolSetting = document.getElementById("type-pool-setting");
@@ -840,6 +841,20 @@ function loadRevealAudio(pokemon) {
     return revealCryBuffers.get(url);
 }
 
+function loadRevealExplosionAudio() {
+    if (!audioContext) return Promise.resolve(null);
+    if (!revealExplosionBufferPromise) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        revealExplosionBufferPromise = fetch("audio/rare-reveal.wav", { signal: controller.signal })
+            .then(response => { if (!response.ok) throw new Error("Reveal sound unavailable"); return response.arrayBuffer(); })
+            .then(buffer => audioContext.decodeAudioData(buffer))
+            .catch(() => { revealExplosionBufferPromise = null; return null; })
+            .finally(() => clearTimeout(timeout));
+    }
+    return revealExplosionBufferPromise;
+}
+
 function getRevealReverbBuffer() {
     if (revealReverbBuffer) return revealReverbBuffer;
     const length = Math.ceil(audioContext.sampleRate * 0.32);
@@ -858,10 +873,8 @@ function getRevealReverbBuffer() {
 
 function stopRevealAudio() {
     revealAudioToken++;
-    if (activeRevealAudio) {
-        activeRevealAudio.stop();
-        activeRevealAudio = null;
-    }
+    for (const playback of activeRevealAudios) playback.stop();
+    activeRevealAudios.clear();
 }
 
 async function playRevealAudio(pokemon) {
@@ -893,11 +906,42 @@ async function playRevealAudio(pokemon) {
         cleaned = true;
         clearTimeout(cleanupTimer);
         source.disconnect(); dry.disconnect(); wet.disconnect(); reverb.disconnect();
-        if (activeRevealAudio === playback) activeRevealAudio = null;
+        activeRevealAudios.delete(playback);
     };
     const playback = { stop() { source.onended = null; source.stop(); cleanup(); } };
     source.onended = () => { cleanupTimer = setTimeout(cleanup, 350); };
-    activeRevealAudio = playback;
+    activeRevealAudios.add(playback);
+    source.start();
+    return true;
+}
+
+// Preserve the original post-silhouette reveal cue as a second, separate effect.
+async function playRevealExplosionAudio(pokemon) {
+    if (!shouldPlayRevealAudio(pokemon) || !audioContext) return false;
+    const token = revealAudioToken;
+    let timeout;
+    const buffer = await Promise.race([
+        loadRevealExplosionAudio(),
+        new Promise(resolve => { timeout = setTimeout(() => resolve(null), 250); })
+    ]);
+    clearTimeout(timeout);
+    if (!buffer || token !== revealAudioToken || audioContext.state !== "running") return false;
+    const source = audioContext.createBufferSource();
+    const gain = audioContext.createGain();
+    source.buffer = buffer;
+    gain.gain.setValueAtTime(0.55, audioContext.currentTime);
+    source.connect(gain);
+    gain.connect(audioContext.destination);
+    let cleaned = false;
+    const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        source.disconnect(); gain.disconnect();
+        activeRevealAudios.delete(playback);
+    };
+    const playback = { stop() { source.onended = null; source.stop(); cleanup(); } };
+    source.onended = cleanup;
+    activeRevealAudios.add(playback);
     source.start();
     return true;
 }
@@ -1070,6 +1114,8 @@ async function playRevealSequence(
     prepareAudio();
     // Download only the selected Pokémon's cry while the first two tones play.
     if (hasRareRevealEffect) loadRevealAudio(previewPokemon);
+    // Also preload the legacy explosion effect for its original reveal moment.
+    if (hasRareRevealEffect) loadRevealExplosionAudio();
 
 
     /*
@@ -1172,6 +1218,7 @@ async function playRevealSequence(
     revealOverlay.classList.add(
         "pokemon-revealed"
     );
+    await playRevealExplosionAudio(previewPokemon);
 
 
     /*
