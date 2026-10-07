@@ -286,6 +286,7 @@ const revealCryBuffers = new Map();
 const revealCryMedia = new Map();
 const revealCryGain = 0.55 * Math.pow(10, -11 / 20);
 const revealCryWetGain = 0.10 * Math.pow(10, -11 / 20);
+const revealCryLeadSeconds = 0.8;
 const revealExplosionGain = 0.55 * Math.pow(10, 1 / 20);
 let revealReverbBuffer = null;
 const activeRevealAudios = new Set();
@@ -926,11 +927,11 @@ async function waitForCrySilhouette(playback) {
             });
         }
         if (Number.isFinite(media.duration) && media.duration > 0) {
-            await sleep(Math.max(0, (media.duration - media.currentTime - 0.5) * 1000));
+            await sleep(Math.max(0, (media.duration - media.currentTime - revealCryLeadSeconds) * 1000));
         }
         return;
     }
-    await sleep(Math.max(0, (playback.duration - 0.5 -
+    await sleep(Math.max(0, (playback.duration - revealCryLeadSeconds -
         (audioContext.currentTime - playback.startedAt)) * 1000));
 }
 
@@ -1316,7 +1317,7 @@ async function playRevealSequence(
     if (!cryPlayback) playRevealTone(300);
     pulseRevealStage(3);
 
-    // Show the silhouette half a second before this exact cry finishes.
+    // Show the silhouette 0.8 seconds before this exact cry finishes.
     if (cryPlayback) await waitForCrySilhouette(cryPlayback);
     else await sleep(360);
 

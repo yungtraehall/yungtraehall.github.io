@@ -531,7 +531,7 @@ if (process.argv.includes("--simulate")) {
             assert.equal(element("reveal-usage-percentage").textContent, "");
             assert.equal(context.oscillatorFrequencies.length, reduced ? 0 : notes);
             assert.equal(context.sampleStarts, !reduced && generator.shouldPlayRevealAudio(context.preview) ? 2 : 0);
-            if (!reduced) assert.equal(context.sleepDurations[3], shouldHaveEffect ? 1500 : 360);
+            if (!reduced) assert.equal(context.sleepDurations[3], shouldHaveEffect ? 1200 : 360);
             if (!reduced && shouldHaveEffect) {
                 assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
                 assert.equal(context.audioPhases.length, 2);
@@ -635,7 +635,7 @@ if (process.argv.includes("--simulate")) {
     context.sleepDurations = [];
     vm.runInContext('revealExplosionBufferPromise = Promise.resolve({legacy:true})', context);
     await vm.runInContext('playRevealSequence("OU", preview)', context);
-    assert.equal(context.sleepDurations[3], 1500);
+    assert.equal(context.sleepDurations[3], 1200);
     assert.ok(mediaEvents.includes('play:https://play.pokemonshowdown.com/audio/cries/volcarona.mp3'));
     assert.ok(mediaEvents.includes('play:audio/rare-reveal.wav'));
     assert.ok(mediaPhases.find(event => event.url === 'audio/rare-reveal.wav').phase.includes('pokemon-revealed'));
@@ -644,12 +644,12 @@ if (process.argv.includes("--simulate")) {
     assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
     assert.equal(context.sampleStarts, 0); // Both assets play directly when fetch is blocked.
     assert.ok(mediaEvents.includes('pause'));
-    for (const [id, duration, expectedDelay] of [['gougingfire',2,1500],['magearna',1.5,1000]]) {
+    for (const [id, duration, expectedDelay] of [['gougingfire',2,1200],['magearna',1.5,700]]) {
         context.preview = {id,name:id,tier:'Uber',generation:9};
         vm.runInContext('revealCryBuffers.delete(getRevealAudioPath(preview))', context);
         context.sleepDurations = [];
         await vm.runInContext('playRevealSequence("Uber", preview)', context);
-        assert.equal(context.sleepDurations[3], expectedDelay, `${id}: reveal half a second before the cry ends`);
+        assert.equal(context.sleepDurations[3], expectedDelay, `${id}: reveal 0.8 seconds before the cry ends`);
         assert.ok(mediaEvents.includes(`play:https://play.pokemonshowdown.com/audio/cries/${id}.mp3`));
     }
     // If metadata arrives after playback starts, use the remaining playback time.
@@ -663,7 +663,7 @@ if (process.argv.includes("--simulate")) {
     context.lateMedia.duration = 1.5;
     listeners.get('durationchange')();
     await delayedMetadata;
-    assert.equal(context.sleepDurations.at(-1), 800);
+    assert.equal(context.sleepDurations.at(-1), 500);
     assert.equal(listeners.size, 0);
     context.shortMedia = {duration:.3,currentTime:0};
     await vm.runInContext('waitForCrySilhouette({media:shortMedia})', context);
