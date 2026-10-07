@@ -475,6 +475,7 @@ if (process.argv.includes("--simulate")) {
     context.oscillatorFrequencies = [];
     context.sampleStarts = 0;
     context.audioPhases = [];
+    context.gainValues = [];
     context.takeSnapshot = () => context.revealSnapshots.push({
         classes: overlay.className, color: properties["--reveal-color"],
         label: element("reveal-special-label").textContent,
@@ -492,7 +493,7 @@ if (process.argv.includes("--simulate")) {
             createConvolver() { return { connect() {}, disconnect() {} }; },
             createBufferSource() { return { connect() {}, start() { sampleStarts++; audioPhases.push(document.getElementById("reveal-overlay").className); }, stop() {}, disconnect() {} }; },
             createOscillator() { return { frequency: { setValueAtTime(value) { oscillatorFrequencies.push(value); } }, connect() {}, start() {}, stop() {}, disconnect() {} }; },
-            createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
+            createGain() { return { gain: { setValueAtTime(value) { gainValues.push(value); }, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
         };
     `, context);
     for (const reduced of [false, true]) {
@@ -533,6 +534,8 @@ if (process.argv.includes("--simulate")) {
                 assert.equal(context.audioPhases.length, 2);
                 assert.ok(!context.audioPhases[0].includes("rarity-revealed") && !context.audioPhases[0].includes("pokemon-revealed"));
                 assert.ok(context.audioPhases[1].includes("pokemon-revealed"));
+                assert.ok(context.gainValues.some(value => Math.abs(value - .55 * Math.pow(10, -9 / 20)) < 1e-10));
+                assert.ok(context.gainValues.some(value => Math.abs(value - .10 * Math.pow(10, -9 / 20)) < 1e-10));
                 assert.equal(vm.runInContext('revealReverbBuffer.duration', context), .32);
             }
         }
@@ -610,10 +613,11 @@ if (process.argv.includes("--simulate")) {
     assert.equal(downloads, 3);
     // Showdown media remains playable when a browser rejects cross-origin fetch.
     const mediaEvents = [];
+    const mediaPhases = [];
     context.Audio = class {
         constructor(url) { this.url = url; this.paused = true; this.currentTime = 0; }
         load() { mediaEvents.push('preload'); }
-        play() { this.paused = false; mediaEvents.push('play:' + this.url); return Promise.resolve(); }
+        play() { this.paused = false; mediaEvents.push('play:' + this.url); mediaPhases.push({url:this.url,phase:overlay.className}); return Promise.resolve(); }
         pause() { this.paused = true; mediaEvents.push('pause'); }
     };
     context.fetch = async () => { throw new TypeError('Cross-origin request blocked'); };
@@ -624,8 +628,19 @@ if (process.argv.includes("--simulate")) {
     vm.runInContext('revealExplosionBufferPromise = Promise.resolve({legacy:true})', context);
     await vm.runInContext('playRevealSequence("OU", preview)', context);
     assert.ok(mediaEvents.includes('play:https://play.pokemonshowdown.com/audio/cries/volcarona.mp3'));
+    assert.ok(mediaEvents.includes('play:audio/rare-reveal.wav'));
+    assert.ok(mediaPhases.find(event => event.url === 'audio/rare-reveal.wav').phase.includes('pokemon-revealed'));
+    assert.ok(Math.abs(vm.runInContext('revealCryMedia.get(getRevealAudioPath(preview)).volume', context) - .55 * Math.pow(10, -9 / 20)) < 1e-10);
+    assert.equal(vm.runInContext('revealExplosionMedia.volume', context), .55);
     assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
-    assert.equal(context.sampleStarts, 1); // Restored KSI effect still plays at full reveal.
+    assert.equal(context.sampleStarts, 0); // Both assets play directly when fetch is blocked.
     assert.ok(mediaEvents.includes('pause'));
+    // If local media playback is rejected, the decoded WAV still gets a turn.
+    context.Audio = class { constructor() { this.paused = true; } load() {} play() { return Promise.reject(new Error('Media blocked')); } pause() {} };
+    vm.runInContext('revealExplosionMedia = null; revealExplosionBufferPromise = Promise.resolve({legacy:true})', context);
+    context.sampleStarts = 0;
+    assert.equal(await vm.runInContext('playRevealExplosionAudio({tier:"Uber",id:"mewtwo"})', context), true);
+    assert.equal(context.sampleStarts, 1);
+    vm.runInContext('stopRevealAudio()', context);
     console.log('PASS: curated reveal colors, normal/reduced-motion lifecycle, state reset, third-tone cry timing, reverb, and cancellation.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
