@@ -282,6 +282,7 @@ const pokemonCryNames = {
     "zygardecomplete": "zygarde-complete"
 };
 const revealCryBuffers = new Map();
+const revealCryMedia = new Map();
 let revealReverbBuffer = null;
 const activeRevealAudios = new Set();
 let revealAudioToken = 0;
@@ -841,6 +842,52 @@ function loadRevealAudio(pokemon) {
     return revealCryBuffers.get(url);
 }
 
+function preloadRevealCryMedia(pokemon) {
+    const url = getRevealAudioPath(pokemon);
+    if (!url || typeof Audio !== "function") return null;
+    if (!revealCryMedia.has(url)) {
+        // A plain media element can play Showdown's MP3 even when its response
+        // cannot be read by fetch for Web Audio processing.
+        const media = new Audio(url);
+        media.preload = "auto";
+        media.volume = 0.55;
+        media.onerror = () => revealCryMedia.delete(url);
+        media.load();
+        revealCryMedia.set(url, media);
+    }
+    return revealCryMedia.get(url);
+}
+
+function pauseRevealCryMedia(media) {
+    media.pause();
+    try { media.currentTime = 0; } catch (_) { /* Metadata may not be loaded yet. */ }
+}
+
+async function playRevealCryMedia(pokemon, token) {
+    const media = preloadRevealCryMedia(pokemon);
+    if (!media || token !== revealAudioToken) return false;
+    let timeout;
+    try {
+        const started = await Promise.race([
+            Promise.resolve(media.play()).then(() => true, () => false),
+            new Promise(resolve => { timeout = setTimeout(() => resolve(false), 500); })
+        ]);
+        if (!started || token !== revealAudioToken) {
+            pauseRevealCryMedia(media);
+            return false;
+        }
+        const playback = { stop() { media.onended = null; pauseRevealCryMedia(media); activeRevealAudios.delete(playback); } };
+        media.onended = () => activeRevealAudios.delete(playback);
+        activeRevealAudios.add(playback);
+        return true;
+    } catch (_) {
+        pauseRevealCryMedia(media);
+        return false;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 function loadRevealExplosionAudio() {
     if (!audioContext) return Promise.resolve(null);
     if (!revealExplosionBufferPromise) {
@@ -875,6 +922,9 @@ function stopRevealAudio() {
     revealAudioToken++;
     for (const playback of activeRevealAudios) playback.stop();
     activeRevealAudios.clear();
+    for (const media of revealCryMedia.values()) {
+        if (!media.paused) pauseRevealCryMedia(media);
+    }
 }
 
 async function playRevealAudio(pokemon) {
@@ -886,7 +936,8 @@ async function playRevealAudio(pokemon) {
         new Promise(resolve => { timeout = setTimeout(() => resolve(null), 250); })
     ]);
     clearTimeout(timeout);
-    if (!buffer || token !== revealAudioToken || audioContext.state !== "running") return false;
+    if (token !== revealAudioToken || audioContext.state !== "running") return false;
+    if (!buffer) return playRevealCryMedia(pokemon, token);
     const source = audioContext.createBufferSource();
     const dry = audioContext.createGain();
     const wet = audioContext.createGain();
@@ -1112,8 +1163,11 @@ async function playRevealSequence(
 
 
     prepareAudio();
-    // Download only the selected Pokémon's cry while the first two tones play.
-    if (hasRareRevealEffect) loadRevealAudio(previewPokemon);
+    // Prepare both cry paths while the first two tones play.
+    if (hasRareRevealEffect) {
+        preloadRevealCryMedia(previewPokemon);
+        loadRevealAudio(previewPokemon);
+    }
     // Also preload the legacy explosion effect for its original reveal moment.
     if (hasRareRevealEffect) loadRevealExplosionAudio();
 

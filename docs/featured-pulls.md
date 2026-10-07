@@ -78,7 +78,10 @@ Actual draw-slot percentages and rarity colors use the revised weights.
   0.32-second decaying impulse. Its independent noise does not consume generator
   randomness. Playback and reverb stop on Continue; late loads cannot play.
   Downloads abort after four seconds, and the third tone waits at most 250 ms
-  for the preload. A failed or slow cry uses the normal third tone. There is
+  for the decoded preload. If a browser blocks cross-origin decoding, a plain
+  MP3 media element plays the selected cry instead (without Web Audio reverb).
+  Media starts have a 500 ms limit and stop on Continue. Only if both cry paths
+  fail does the normal third tone play. There is
   no extra cry when the full sprite appears. At the full reveal, the original
   `audio/rare-reveal.wav` effect (restored from `KSIExplosionVerb.wav`) also
   plays at its previous 0.55 gain. Both sounds stop on Continue. Ordinary OU
