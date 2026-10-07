@@ -141,6 +141,8 @@ const revealTierColors = {
 let revealInProgress = false;
 let audioContext = null;
 let revealAudioBufferPromise = null;
+const rareOUAudioPaths = ["audio/rare-ou-maybach.wav", "audio/rare-ou-metroboomin.wav", "audio/rare-ou-yeahhbaby.wav"];
+const rareOUAudioBuffers = new Map();
 let activeRevealAudio = null;
 let revealAudioToken = 0;
 const typePoolSelect = document.getElementById("type-pool-select");
@@ -609,6 +611,7 @@ function prepareAudio() {
         audioContext.resume().catch(() => {});
     }
     loadRevealAudio();
+    rareOUAudioPaths.forEach(path => loadRevealAudio(path));
 
 }
 
@@ -678,8 +681,23 @@ function shouldPlayRevealAudio(pokemon) {
         getSpecialPresentation(pokemon)?.className === "special-ou";
 }
 
-function loadRevealAudio() {
+function getRevealAudioPath(pokemon) {
+    return getSpecialPresentation(pokemon)?.className === "special-ou"
+        ? rareOUAudioPaths[Math.floor(Math.random() * rareOUAudioPaths.length)]
+        : "audio/rare-reveal.wav";
+}
+
+function loadRevealAudio(path = "audio/rare-reveal.wav") {
     if (!audioContext) return Promise.resolve(null);
+    if (rareOUAudioPaths.includes(path)) {
+        if (!rareOUAudioBuffers.has(path)) {
+            rareOUAudioBuffers.set(path, fetch(path)
+                .then(response => { if (!response.ok) throw new Error("Audio unavailable"); return response.arrayBuffer(); })
+                .then(buffer => audioContext.decodeAudioData(buffer))
+                .catch(() => { rareOUAudioBuffers.delete(path); return null; }));
+        }
+        return rareOUAudioBuffers.get(path);
+    }
     if (!revealAudioBufferPromise) {
         revealAudioBufferPromise = fetch("audio/rare-reveal.wav")
             .then(response => { if (!response.ok) throw new Error("Audio unavailable"); return response.arrayBuffer(); })
@@ -700,7 +718,7 @@ function stopRevealAudio() {
 async function playRevealAudio(pokemon) {
     if (!shouldPlayRevealAudio(pokemon) || !audioContext) return false;
     const token = revealAudioToken;
-    const buffer = await loadRevealAudio();
+    const buffer = await loadRevealAudio(getRevealAudioPath(pokemon));
     if (!buffer || token !== revealAudioToken || audioContext.state !== "running") return false;
     const source = audioContext.createBufferSource();
     const gain = audioContext.createGain();

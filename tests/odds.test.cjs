@@ -74,6 +74,20 @@ vm.runInContext(`globalThis.generator = {
     simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getSpecialPresentation, getRevealTypes, getRevealUsageDetails, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
+// Each equal third of the random draw selects one Rare OU clip. Other
+// reveals retain their existing audio even for curated Pokémon in Uber.
+const savedAudioRandom = vm.runInContext('Math.random', context);
+for (const [draw, expected] of [[0,"maybach"],[1/3,"metroboomin"],[2/3,"yeahhbaby"],[.999999,"yeahhbaby"]]) {
+    context.audioDraw = draw;
+    vm.runInContext('Math.random = () => audioDraw', context);
+    assert.equal(vm.runInContext('getRevealAudioPath({id:"volcarona",tier:"OU"})', context), `audio/rare-ou-${expected}.wav`);
+    for (const pokemon of [{id:"volcarona",tier:"Uber"},{id:"zapdos",tier:"OU"},{id:"volcarona",tier:"UU"},{id:"koraidon",tier:"Uber",sourceTier:"AG"}]) {
+        context.audioPokemon = pokemon;
+        assert.equal(vm.runInContext('getRevealAudioPath(audioPokemon)', context), "audio/rare-reveal.wav");
+    }
+}
+context.savedAudioRandom = savedAudioRandom;
+vm.runInContext('Math.random = savedAudioRandom', context);
 
 for (const profile of Object.values(generator.tierOddsProfiles)) {
     assert.equal(Object.values(profile).reduce((sum, value) => sum + value, 0), 100);
@@ -454,6 +468,7 @@ if (process.argv.includes("--simulate")) {
         waitForContinue = async () => takeSnapshot();
         prepareAudio = () => {};
         revealAudioBufferPromise = Promise.resolve({});
+        rareOUAudioPaths.forEach(path => rareOUAudioBuffers.set(path, Promise.resolve({})));
         audioContext = {
             state: "running", currentTime: 0, destination: {},
             createBufferSource() { return { connect() {}, start() { sampleStarts++; }, stop() {}, disconnect() {} }; },
@@ -520,6 +535,11 @@ if (process.argv.includes("--simulate")) {
     const delayedPlayback = vm.runInContext('playRevealAudio({tier:"Uber",id:"mewtwo"})', context);
     vm.runInContext('stopRevealAudio(); finishAudioLoad({});', context);
     await delayedPlayback;
+    assert.equal(context.sampleStarts, 0);
+    vm.runInContext('rareOUAudioPaths.forEach(path => rareOUAudioBuffers.set(path, new Promise(resolve => { globalThis.finishOUAudioLoad = resolve; })));', context);
+    const delayedOUPlayback = vm.runInContext('Math.random = () => .99; playRevealAudio({tier:"OU",id:"volcarona"})', context);
+    vm.runInContext('stopRevealAudio(); finishOUAudioLoad({}); Math.random = savedAudioRandom;', context);
+    await delayedOUPlayback;
     assert.equal(context.sampleStarts, 0);
     console.log('PASS: curated reveal colors, normal/reduced-motion lifecycle, state reset, and uploaded audio playback.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
