@@ -30,6 +30,12 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 
 ## Presentation
 
+Rare OU plays one of the uploaded Maybach Music, Metro Boomin, or Yeahh Baby
+clips, chosen independently with equal 1-in-3 probability, when the silhouette
+resolves into the full sprite. Clips preload from the Generate click and stop
+on Continue; late loads are cancelled. Uber and AG keep their existing sound.
+Reduced-motion reveals retain the existing silent behavior.
+
 - Listed pulls have a matching tier badge, category label, colored card border,
   and neon glow. Rarity badges appear on every Pokémon and show the actual
   percentage chance for that draw slot. Common, Rare, Very Rare, and Ultra Rare
