@@ -476,13 +476,14 @@ if (process.argv.includes("--simulate")) {
     context.sampleStarts = 0;
     context.audioPhases = [];
     context.gainValues = [];
+    context.sleepDurations = [];
     context.takeSnapshot = () => context.revealSnapshots.push({
         classes: overlay.className, color: properties["--reveal-color"],
         label: element("reveal-special-label").textContent,
         typeText: element("reveal-type-text").textContent
     });
     vm.runInContext(`
-        sleep = async () => {};
+        sleep = async (duration) => sleepDurations.push(duration);
         waitForContinue = async () => takeSnapshot();
         prepareAudio = () => {};
         revealExplosionBufferPromise = Promise.resolve({ legacy: true });
@@ -509,6 +510,7 @@ if (process.argv.includes("--simulate")) {
             context.oscillatorFrequencies.length = 0;
             context.sampleStarts = 0;
             context.audioPhases = [];
+            context.sleepDurations = [];
             context.preview = { id, name: id, generation: 9, tier, sourceTier, pullProbability: 0.00001 };
             await vm.runInContext('playRevealSequence(preview.tier, preview)', context);
             const snapshot = context.revealSnapshots.at(-1);
@@ -529,13 +531,15 @@ if (process.argv.includes("--simulate")) {
             assert.equal(element("reveal-usage-percentage").textContent, "");
             assert.equal(context.oscillatorFrequencies.length, reduced ? 0 : notes);
             assert.equal(context.sampleStarts, !reduced && generator.shouldPlayRevealAudio(context.preview) ? 2 : 0);
+            if (!reduced) assert.equal(context.sleepDurations[3], shouldHaveEffect ? 2000 : 360);
             if (!reduced && shouldHaveEffect) {
                 assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
                 assert.equal(context.audioPhases.length, 2);
                 assert.ok(!context.audioPhases[0].includes("rarity-revealed") && !context.audioPhases[0].includes("pokemon-revealed"));
                 assert.ok(context.audioPhases[1].includes("pokemon-revealed"));
-                assert.ok(context.gainValues.some(value => Math.abs(value - .55 * Math.pow(10, -9 / 20)) < 1e-10));
-                assert.ok(context.gainValues.some(value => Math.abs(value - .10 * Math.pow(10, -9 / 20)) < 1e-10));
+                assert.ok(context.gainValues.some(value => Math.abs(value - .55 * Math.pow(10, -11 / 20)) < 1e-10));
+                assert.ok(context.gainValues.some(value => Math.abs(value - .10 * Math.pow(10, -11 / 20)) < 1e-10));
+                assert.ok(context.gainValues.some(value => Math.abs(value - .55 * Math.pow(10, 1 / 20)) < 1e-10));
                 assert.equal(vm.runInContext('revealReverbBuffer.duration', context), .32);
             }
         }
@@ -578,8 +582,10 @@ if (process.argv.includes("--simulate")) {
     context.audioPhases = [];
     vm.runInContext('revealCryBuffers.set(getRevealAudioPath({tier:"Uber",id:"mewtwo"}), Promise.resolve(null));', context);
     context.preview = {id:"mewtwo",name:"Mewtwo",tier:"Uber",generation:9};
+    context.sleepDurations = [];
     await vm.runInContext('playRevealSequence("Uber", preview)', context);
     assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470,300,600]);
+    assert.equal(context.sleepDurations[3], 360);
     assert.equal(context.sampleStarts, 1);
     assert.ok(context.audioPhases[0].includes("pokemon-revealed"));
     const impulse = vm.runInContext('revealReverbBuffer.getChannelData(0)', context);
@@ -625,13 +631,15 @@ if (process.argv.includes("--simulate")) {
     context.preview = {id:'volcarona',name:'Volcarona',tier:'OU',generation:9};
     context.oscillatorFrequencies.length = 0;
     context.sampleStarts = 0;
+    context.sleepDurations = [];
     vm.runInContext('revealExplosionBufferPromise = Promise.resolve({legacy:true})', context);
     await vm.runInContext('playRevealSequence("OU", preview)', context);
+    assert.equal(context.sleepDurations[3], 2000);
     assert.ok(mediaEvents.includes('play:https://play.pokemonshowdown.com/audio/cries/volcarona.mp3'));
     assert.ok(mediaEvents.includes('play:audio/rare-reveal.wav'));
     assert.ok(mediaPhases.find(event => event.url === 'audio/rare-reveal.wav').phase.includes('pokemon-revealed'));
-    assert.ok(Math.abs(vm.runInContext('revealCryMedia.get(getRevealAudioPath(preview)).volume', context) - .55 * Math.pow(10, -9 / 20)) < 1e-10);
-    assert.equal(vm.runInContext('revealExplosionMedia.volume', context), .55);
+    assert.ok(Math.abs(vm.runInContext('revealCryMedia.get(getRevealAudioPath(preview)).volume', context) - .55 * Math.pow(10, -11 / 20)) < 1e-10);
+    assert.ok(Math.abs(vm.runInContext('revealExplosionMedia.volume', context) - .55 * Math.pow(10, 1 / 20)) < 1e-10);
     assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
     assert.equal(context.sampleStarts, 0); // Both assets play directly when fetch is blocked.
     assert.ok(mediaEvents.includes('pause'));
