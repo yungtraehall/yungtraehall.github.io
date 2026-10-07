@@ -35,7 +35,12 @@ The probability is the product of the chance to select the Pokémon's tier and i
 
 Classifications use the unrounded probability. Percentages normally use two decimals; tiny chances retain significant digits so a positive chance never displays as zero. Extra precision is also kept whenever rounding would imply a different rarity level. Rarity colors appear on both result badges and the reveal odds line. Category styling is separate: Rare OU uses burgundy, Featured Ubers use magenta, and AG uses the Ultra Rare text gold (#ffe7a6). Category minimum labels are removed so changing Odds can move even a featured/AG Pokémon between rarity levels.
 
-At Uber++ in the first draw slot, Mewtwo has approximately 2.98% chance in Gen 1, 0.0966% in National Dex, and 0.0959% in Bananza. The last two both display `0.097% Chance` with a Very Rare label, while remaining distinct probabilities. Strengthening Odds increases the OU/Uber chances when those tiers compete with lower tiers. If a type filter leaves only one available tier, its share is already 100%, and changing tier Odds cannot increase it further.
+Rare OU uses a 0.70× individual weight (previously 0.75×), and Rare Uber uses
+0.45× (previously 0.50×). Their pull chances decrease relative to other Pokémon
+in the same tier. Tier profiles and AG's 0.10× modifier are preserved; displayed
+percentages and colors use the new actual draw-slot probabilities.
+
+At Uber++ in the first draw slot, Mewtwo has approximately 2.98% chance in Gen 1, 0.0995% in National Dex, and 0.0988% in Bananza with these category weights. The last two remain Very Rare. Strengthening Odds increases the OU/Uber chances when those tiers compete with lower tiers. If a type filter leaves only one available tier, its share is already 100%, and changing tier Odds cannot increase it further.
 
 ## Individual rarity categories
 

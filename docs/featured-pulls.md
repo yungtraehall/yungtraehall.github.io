@@ -3,8 +3,8 @@
 The approved selection contains 51 exact forms: 42 from the Uber list (including
 all 18 Arceus types), and nine from the OU list. A listed Pokémon receives the
 treatment when its selected pool classifies it as OU, Uber, or AG. Its current
-tier controls color and weight: burgundy `#800020` and 0.75× for OU, magenta
-`#DF00FF` and 0.50× for Uber. AG retains 0.10× and uses gold `#ffe7a6`
+tier controls color and weight: burgundy `#800020` and 0.70× for OU, magenta
+`#DF00FF` and 0.45× for Uber. AG retains 0.10× and uses gold `#ffe7a6`
 for its cards, badges, portal, frame, glow, and reveal effects. UU and below
 keep ordinary tier styling while also displaying probability rarity badges.
 
@@ -30,11 +30,9 @@ Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
 
 ## Presentation
 
-Rare OU plays one of the uploaded Maybach Music, Metro Boomin, or Yeahh Baby
-clips, chosen independently with equal 1-in-3 probability, when the silhouette
-resolves into the full sprite. Clips preload from the Generate click and stop
-on Continue; late loads are cancelled. Uber and AG keep their existing sound.
-Reduced-motion reveals retain the existing silent behavior.
+Rare OU and Rare Uber weights decrease modestly from 0.75×/0.50× to
+0.70×/0.45×, respectively. Tier profiles and AG's 0.10× remain unchanged.
+Actual draw-slot percentages and rarity colors use the revised weights.
 
 - Listed pulls have a matching tier badge, category label, colored card border,
   and neon glow. Rarity badges appear on every Pokémon and show the actual
@@ -70,12 +68,19 @@ Reduced-motion reveals retain the existing silent behavior.
   shine follows the sprite's transparent outline and exact-generation fallback.
   These accents start with the reveal, without waiting for the audio to finish,
   and all disappear without looping. Ordinary OU and lower tiers omit them.
-- Rare OU, any Uber (ordinary or featured), and AG play the user-supplied
-  `audio/rare-reveal.wav` when the Pokémon appears. This replaces the synthesized
-  flourishes. The 2.936-second WAV is copied unchanged from the latest attachment,
-  played at 0.55 gain, and stopped when leaving the reveal. It loads once through
-  Web Audio; unavailable/blocked audio does not interrupt generation. Late loads
-  are cancelled on Continue. Ordinary OU and UU/below do not play the clip.
+- Rare OU, any Uber (ordinary or featured), and AG replace the third buildup
+  tone with their MP3 cry from `https://play.pokemonshowdown.com/audio/cries/`.
+  `pokemonCryNames` maps every eligible exact form to a verified directory entry.
+  Distinct form cries are used where present; Arceus types, Ogerpon masks,
+  Giratina-Origin, and other forms without distinct files share the species cry.
+  Cries preload during the first two tones and cache after decoding. Web Audio
+  mixes 0.55 dry gain with 0.10 wet gain through a stereo convolver with a short
+  0.32-second decaying impulse. Its independent noise does not consume generator
+  randomness. Playback and reverb stop on Continue; late loads cannot play.
+  Downloads abort after four seconds, and the third tone waits at most 250 ms
+  for the preload. A failed or slow cry uses the normal third tone. There is
+  no second sound when the full sprite appears. Ordinary OU and UU/below retain
+  all three normal tones. The obsolete uploaded WAV effects are removed.
 - UU uses the normal 650 ms final-tone spacing. OU keeps 1,100 ms and Uber keeps
   1,350 ms (250 ms beyond OU).
 - Reduced motion uses a static frame and glow, with no portal, crystal,
@@ -89,7 +94,9 @@ Reduced-motion reveals retain the existing silent behavior.
 
 `node tests/odds.test.cjs --simulate` checks every approved ID against the actual
 pools, all rarity thresholds, exact-form exclusions, tier-dependent colors and
-weights, preview priority, normal/reduced-motion reveal reset, uploaded audio eligibility/cancellation. It also runs the production 100,000-team Generation 9 Uber++ simulation.
+weights, preview priority, normal/reduced-motion reveal reset, cry mappings,
+third-tone timing, reverb, and cancellation. It also runs the production
+100,000-team Generation 9 Uber++ simulation.
 The latest tier totals are approximately 7.04% Uber, 37.83% OU, and 25.13% UU; the lists
 redistribute individual chances within each tier.
 

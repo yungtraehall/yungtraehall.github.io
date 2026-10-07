@@ -55,6 +55,7 @@ const context = vm.createContext({
         body: { classList: { add() {}, remove() {} } }
     },
     Math: seededMath,
+    setTimeout, clearTimeout, AbortController,
     console: { log() {}, table() {} }
 });
 
@@ -74,20 +75,17 @@ vm.runInContext(`globalThis.generator = {
     simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getSpecialPresentation, getRevealTypes, getRevealUsageDetails, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
-// Each equal third of the random draw selects one Rare OU clip. Other
-// reveals retain their existing audio even for curated Pokémon in Uber.
-const savedAudioRandom = vm.runInContext('Math.random', context);
-for (const [draw, expected] of [[0,"maybach"],[1/3,"metroboomin"],[2/3,"yeahhbaby"],[.999999,"yeahhbaby"]]) {
-    context.audioDraw = draw;
-    vm.runInContext('Math.random = () => audioDraw', context);
-    assert.equal(vm.runInContext('getRevealAudioPath({id:"volcarona",tier:"OU"})', context), `audio/rare-ou-${expected}.wav`);
-    for (const pokemon of [{id:"volcarona",tier:"Uber"},{id:"zapdos",tier:"OU"},{id:"volcarona",tier:"UU"},{id:"koraidon",tier:"Uber",sourceTier:"AG"}]) {
-        context.audioPokemon = pokemon;
-        assert.equal(vm.runInContext('getRevealAudioPath(audioPokemon)', context), "audio/rare-reveal.wav");
-    }
+// Every eligible form in every pool has a verified Showdown MP3 mapping.
+for (const pokemon of Object.values(generator.datasets).flat()) {
+    context.audioPokemon = pokemon;
+    const url = vm.runInContext('getRevealAudioPath(audioPokemon)', context);
+    if (generator.shouldPlayRevealAudio(pokemon)) assert.match(url, /^https:\/\/play\.pokemonshowdown\.com\/audio\/cries\/[a-z0-9-]+\.mp3$/);
+    else assert.equal(url, null);
 }
-context.savedAudioRandom = savedAudioRandom;
-vm.runInContext('Math.random = savedAudioRandom', context);
+for (const [id, name] of [["raichumegay","raichu-megay"],["zaciancrowned","zacian-crowned"],["kyuremblack","kyurem-black"],["necrozmaduskmane","necrozma-duskmane"],["arceuswater","arceus"],["ogerponwellspring","ogerpon"]]) {
+    context.audioPokemon = {id,tier:"Uber"};
+    assert.equal(vm.runInContext('getRevealAudioPath(audioPokemon)', context), `https://play.pokemonshowdown.com/audio/cries/${name}.mp3`);
+}
 
 for (const profile of Object.values(generator.tierOddsProfiles)) {
     assert.equal(Object.values(profile).reduce((sum, value) => sum + value, 0), 100);
@@ -117,12 +115,12 @@ for (const tier of ["UU", "RU", "NU", "PU", "ZU"]) {
     assert.equal(generator.getPokemonPullWeight({ tier, usageModifier: 1.15 }), 1);
 }
 
-assert.equal(generator.getPokemonPullWeight({ id: "zaciancrowned", tier: "Uber", usageModifier: 1 }), 0.5);
-assert.equal(generator.getPokemonPullWeight({ id: "kyogreprimal", tier: "Uber", usageModifier: 0.85 }), 0.425);
+assert.equal(generator.getPokemonPullWeight({ id: "zaciancrowned", tier: "Uber", usageModifier: 1 }), 0.45);
+assert.equal(generator.getPokemonPullWeight({ id: "kyogreprimal", tier: "Uber", usageModifier: 0.85 }), 0.3825);
 assert.equal(generator.getRarityCategory({ id: "zaciancrowned", sourceTier: "AG", tier: "Uber" }).multiplier, 0.1);
 assert.equal(generator.getRarityCategory({ id: "kyogre", tier: "Uber" }).multiplier, 1);
 generator.RARE_OU_POKEMON.add("example");
-assert.equal(generator.getPokemonPullWeight({ id: "example", tier: "OU", usageModifier: 1 }), 0.75);
+assert.equal(generator.getPokemonPullWeight({ id: "example", tier: "OU", usageModifier: 1 }), 0.70);
 assert.equal(generator.getPokemonPullWeight({ id: "example", tier: "UU", usageModifier: 1 }), 1);
 generator.RARE_OU_POKEMON.delete("example");
 for (let gen = 1; gen <= 4; gen++) {
@@ -217,11 +215,11 @@ assert.equal(generator.RARE_OU_POKEMON.size, 9);
 for (const id of generator.FEATURED_RARE_UBERS) {
     assert.ok(Object.values(generator.datasets).some(pool => pool.some(p => p.id === id)), `Unknown featured form: ${id}`);
     assert.equal(generator.getSpecialPresentation({ id, tier: "Uber" }).color, "#DF00FF");
-    assert.equal(generator.getPokemonPullWeight({ id, tier: "Uber", usageModifier: 1 }), 0.5);
+    assert.equal(generator.getPokemonPullWeight({ id, tier: "Uber", usageModifier: 1 }), 0.45);
 }
 for (const id of generator.RARE_OU_POKEMON) {
     assert.equal(generator.getSpecialPresentation({ id, tier: "OU" }).color, "#800020");
-    assert.equal(generator.getPokemonPullWeight({ id, tier: "OU", usageModifier: 1 }), 0.75);
+    assert.equal(generator.getPokemonPullWeight({ id, tier: "OU", usageModifier: 1 }), 0.70);
 }
 for (const id of ["kyogre", "groudon", "mewtwo", "rayquazamega", "garchompmega", "ogerponhearthflame"]) {
     assert.equal(generator.getSpecialPresentation({ id, tier: "Uber" }), null);
@@ -320,6 +318,23 @@ try {
 assert.ok(rebalancedOU.pullProbability < previousOU.pullProbability);
 assert.ok(rebalancedUU.pullProbability > previousUU.pullProbability);
 assert.equal(generator.getRarityDetails(rebalancedUU).probability, rebalancedUU.pullProbability);
+// Compare actual generated slot chances with the previous category weights.
+context.currentRarityFunction = vm.runInContext('getRarityCategory', context);
+for (const id of ["kyurem", "zacian"]) {
+    const revised = forceFirstPokemon(generator.datasets.nationaldex, id, "++");
+    let previous;
+    try {
+        vm.runInContext(`getRarityCategory = pokemon => {
+            const result = currentRarityFunction(pokemon);
+            if (result.multiplier === .70) result.multiplier = .75;
+            if (result.multiplier === .45) result.multiplier = .50;
+            return result;
+        };`, context);
+        previous = forceFirstPokemon(generator.datasets.nationaldex, id, "++");
+    } finally { vm.runInContext('getRarityCategory = currentRarityFunction;', context); }
+    assert.ok(revised.pullProbability < previous.pullProbability);
+    assert.equal(generator.getRarityDetails(revised).probability, revised.pullProbability);
+}
 console.log("Mewtwo actual slot percentages (Gen 1 / National Dex / Bananza, Uber++):", mewtwoChances.map(p => (p * 100).toFixed(6) + "%").join(" / "));
 // Ordinary, featured OU/Uber, and AG probabilities all respond to Odds.
 for (const id of ["mewtwo", "zacian", "dragapult", "koraidon"]) {
@@ -467,11 +482,12 @@ if (process.argv.includes("--simulate")) {
         sleep = async () => {};
         waitForContinue = async () => takeSnapshot();
         prepareAudio = () => {};
-        revealAudioBufferPromise = Promise.resolve({});
-        rareOUAudioPaths.forEach(path => rareOUAudioBuffers.set(path, Promise.resolve({})));
+        Object.values(pokemonCryNames).forEach(name => revealCryBuffers.set("https://play.pokemonshowdown.com/audio/cries/" + name + ".mp3", Promise.resolve({})));
         audioContext = {
-            state: "running", currentTime: 0, destination: {},
-            createBufferSource() { return { connect() {}, start() { sampleStarts++; }, stop() {}, disconnect() {} }; },
+            state: "running", currentTime: 0, sampleRate: 48000, destination: {},
+            createBuffer(channels, length, rate) { const data = Array.from({length:channels}, () => new Float32Array(length)); return { duration: length / rate, getChannelData(channel) { return data[channel]; } }; },
+            createConvolver() { return { connect() {}, disconnect() {} }; },
+            createBufferSource() { return { connect() {}, start() { sampleStarts++; globalThis.cryPhase = document.getElementById("reveal-overlay").className; }, stop() {}, disconnect() {} }; },
             createOscillator() { return { frequency: { setValueAtTime(value) { oscillatorFrequencies.push(value); } }, connect() {}, start() {}, stop() {}, disconnect() {} }; },
             createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
         };
@@ -479,10 +495,10 @@ if (process.argv.includes("--simulate")) {
     for (const reduced of [false, true]) {
         context.reducedMotion = reduced;
         for (const [id, tier, color, label, notes, sourceTier] of [
-            ["zaciancrowned", "Uber", "#DF00FF", "Feature Rare Uber", 6],
-            ["garchomp", "OU", "#800020", "Rare OU", 6],
-            ["koraidon", "Uber", "#ffe7a6", "Anything Goes", 6, "AG"],
-            ["mewtwo", "Uber", null, "", 6],
+            ["zaciancrowned", "Uber", "#DF00FF", "Feature Rare Uber", 4],
+            ["garchomp", "OU", "#800020", "Rare OU", 4],
+            ["koraidon", "Uber", "#ffe7a6", "Anything Goes", 4, "AG"],
+            ["mewtwo", "Uber", null, "", 4],
             ["zapdos", "OU", null, "", 6],
             ["ribombee", "RU", null, "", 6]
         ]) {
@@ -508,6 +524,11 @@ if (process.argv.includes("--simulate")) {
             assert.equal(element("reveal-usage-percentage").textContent, "");
             assert.equal(context.oscillatorFrequencies.length, reduced ? 0 : notes);
             assert.equal(context.sampleStarts, !reduced && generator.shouldPlayRevealAudio(context.preview) ? 1 : 0);
+            if (!reduced && shouldHaveEffect) {
+                assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
+                assert.ok(!context.cryPhase.includes("rarity-revealed") && !context.cryPhase.includes("pokemon-revealed"));
+                assert.equal(vm.runInContext('revealReverbBuffer.duration', context), .32);
+            }
         }
     }
     // A late download must not start after the user has continued.
@@ -531,15 +552,51 @@ if (process.argv.includes("--simulate")) {
     context.sleep = previousSleep;
 
     context.sampleStarts = 0;
-    vm.runInContext('revealAudioBufferPromise = new Promise(resolve => { globalThis.finishAudioLoad = resolve; });', context);
+    vm.runInContext('revealCryBuffers.set(getRevealAudioPath({tier:"Uber",id:"mewtwo"}), new Promise(resolve => { globalThis.finishAudioLoad = resolve; }));', context);
     const delayedPlayback = vm.runInContext('playRevealAudio({tier:"Uber",id:"mewtwo"})', context);
     vm.runInContext('stopRevealAudio(); finishAudioLoad({});', context);
     await delayedPlayback;
     assert.equal(context.sampleStarts, 0);
-    vm.runInContext('rareOUAudioPaths.forEach(path => rareOUAudioBuffers.set(path, new Promise(resolve => { globalThis.finishOUAudioLoad = resolve; })));', context);
-    const delayedOUPlayback = vm.runInContext('Math.random = () => .99; playRevealAudio({tier:"OU",id:"volcarona"})', context);
-    vm.runInContext('stopRevealAudio(); finishOUAudioLoad({}); Math.random = savedAudioRandom;', context);
+    vm.runInContext('revealCryBuffers.set(getRevealAudioPath({tier:"OU",id:"volcarona"}), new Promise(resolve => { globalThis.finishOUAudioLoad = resolve; }));', context);
+    const delayedOUPlayback = vm.runInContext('playRevealAudio({tier:"OU",id:"volcarona"})', context);
+    vm.runInContext('stopRevealAudio(); finishOUAudioLoad({});', context);
     await delayedOUPlayback;
     assert.equal(context.sampleStarts, 0);
-    console.log('PASS: curated reveal colors, normal/reduced-motion lifecycle, state reset, and uploaded audio playback.');
+    // Missing cry keeps the third tone and never starts a second sound at reveal.
+    context.oscillatorFrequencies.length = 0;
+    context.sampleStarts = 0;
+    vm.runInContext('revealCryBuffers.set(getRevealAudioPath({tier:"Uber",id:"mewtwo"}), Promise.resolve(null));', context);
+    context.preview = {id:"mewtwo",name:"Mewtwo",tier:"Uber",generation:9};
+    await vm.runInContext('playRevealSequence("Uber", preview)', context);
+    assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470,300,600]);
+    assert.equal(context.sampleStarts, 0);
+    const impulse = vm.runInContext('revealReverbBuffer.getChannelData(0)', context);
+    assert.ok(impulse.some(value => value !== 0));
+    assert.ok(Math.abs(impulse.at(-1)) < 1e-9);
+
+    // A slow preload may finish later, but its timed-out playback stays silent.
+    vm.runInContext('revealCryBuffers.set(getRevealAudioPath({tier:"Uber",id:"mewtwo"}), new Promise(resolve => { globalThis.finishSlowCry = resolve; }));', context);
+    assert.equal(await vm.runInContext('playRevealAudio({tier:"Uber",id:"mewtwo"})', context), false);
+    vm.runInContext('finishSlowCry({});', context);
+    await Promise.resolve();
+    assert.equal(context.sampleStarts, 0);
+
+    // Preloads share a decoded buffer; failed HTTP responses remain retryable.
+    let downloads = 0, failDownload = false;
+    context.fetch = async () => { downloads++; return {ok:!failDownload, arrayBuffer:async () => new ArrayBuffer(8)}; };
+    context.audioContext = vm.runInContext('audioContext', context);
+    context.audioContext.decodeAudioData = async () => ({decoded:true});
+    vm.runInContext('revealCryBuffers.delete(getRevealAudioPath({tier:"OU",id:"volcarona"}));', context);
+    const firstLoad = vm.runInContext('loadRevealAudio({tier:"OU",id:"volcarona"})', context);
+    const sharedLoad = vm.runInContext('loadRevealAudio({tier:"OU",id:"volcarona"})', context);
+    assert.equal(firstLoad, sharedLoad);
+    assert.equal((await firstLoad).decoded, true);
+    assert.equal(downloads, 1);
+    vm.runInContext('revealCryBuffers.delete(getRevealAudioPath({tier:"OU",id:"volcarona"}));', context);
+    failDownload = true;
+    assert.equal(await vm.runInContext('loadRevealAudio({tier:"OU",id:"volcarona"})', context), null);
+    failDownload = false;
+    assert.equal((await vm.runInContext('loadRevealAudio({tier:"OU",id:"volcarona"})', context)).decoded, true);
+    assert.equal(downloads, 3);
+    console.log('PASS: curated reveal colors, normal/reduced-motion lifecycle, state reset, third-tone cry timing, reverb, and cancellation.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
