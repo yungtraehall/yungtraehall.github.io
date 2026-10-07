@@ -140,9 +140,148 @@ const revealTierColors = {
 
 let revealInProgress = false;
 let audioContext = null;
-let revealAudioBufferPromise = null;
-const rareOUAudioPaths = ["audio/rare-ou-maybach.wav", "audio/rare-ou-metroboomin.wav", "audio/rare-ou-yeahhbaby.wav"];
-const rareOUAudioBuffers = new Map();
+// Verified against Showdown's MP3 directory. Forms without distinct recordings
+// deliberately share their species cry (e.g. Arceus types and Ogerpon masks).
+const pokemonCryNames = {
+    "aegislash": "aegislash",
+    "alakazammega": "alakazam-mega",
+    "annihilape": "annihilape",
+    "arceus": "arceus",
+    "arceusbug": "arceus",
+    "arceusdark": "arceus",
+    "arceusdragon": "arceus",
+    "arceuselectric": "arceus",
+    "arceusfairy": "arceus",
+    "arceusfighting": "arceus",
+    "arceusfire": "arceus",
+    "arceusflying": "arceus",
+    "arceusghost": "arceus",
+    "arceusgrass": "arceus",
+    "arceusground": "arceus",
+    "arceusice": "arceus",
+    "arceuspoison": "arceus",
+    "arceuspsychic": "arceus",
+    "arceusrock": "arceus",
+    "arceussteel": "arceus",
+    "arceuswater": "arceus",
+    "archaludon": "archaludon",
+    "baxcalibur": "baxcalibur",
+    "baxcaliburmega": "baxcalibur-mega",
+    "blastoisemega": "blastoise-mega",
+    "blaziken": "blaziken",
+    "blazikenmega": "blaziken-mega",
+    "calyrexice": "calyrex-ice",
+    "calyrexshadow": "calyrex-shadow",
+    "celebi": "celebi",
+    "chienpao": "chienpao",
+    "chiyu": "chiyu",
+    "cinderace": "cinderace",
+    "cloyster": "cloyster",
+    "darkrai": "darkrai",
+    "darmanitangalar": "darmanitan",
+    "darmanitangalarzen": "darmanitan",
+    "deoxys": "deoxys",
+    "deoxysattack": "deoxys",
+    "deoxysdefense": "deoxys",
+    "deoxysspeed": "deoxys",
+    "dialga": "dialga",
+    "dialgaorigin": "dialga",
+    "dracovish": "dracovish",
+    "dragapult": "dragapult",
+    "espathra": "espathra",
+    "eternatus": "eternatus",
+    "fluttermane": "fluttermane",
+    "garchomp": "garchomp",
+    "genesect": "genesect",
+    "genesectburn": "genesect",
+    "genesectchill": "genesect",
+    "genesectdouse": "genesect",
+    "genesectshock": "genesect",
+    "gengarmega": "gengar-mega",
+    "gholdengo": "gholdengo",
+    "giratina": "giratina",
+    "giratinaorigin": "giratina",
+    "gougingfire": "gougingfire",
+    "greninja": "greninja",
+    "groudon": "groudon",
+    "groudonprimal": "groudon-primal",
+    "hooh": "hooh",
+    "hoopaunbound": "hoopa-unbound",
+    "ironbundle": "ironbundle",
+    "kangaskhanmega": "kangaskhan-mega",
+    "kingambit": "kingambit",
+    "koraidon": "koraidon",
+    "kyogre": "kyogre",
+    "kyogreprimal": "kyogre-primal",
+    "kyurem": "kyurem",
+    "kyuremblack": "kyurem-black",
+    "kyuremwhite": "kyurem-white",
+    "landorus": "landorus",
+    "latias": "latias",
+    "latios": "latios",
+    "lucariomega": "lucario-mega",
+    "lucariomegaz": "lucario-megaz",
+    "lugia": "lugia",
+    "lunala": "lunala",
+    "machamp": "machamp",
+    "magearna": "magearna",
+    "magearnaoriginal": "magearna",
+    "manaphy": "manaphy",
+    "marshadow": "marshadow",
+    "mawilemega": "mawile-mega",
+    "metagrossmega": "metagross-mega",
+    "mew": "mew",
+    "mewtwo": "mewtwo",
+    "mewtwomegax": "mewtwo-megax",
+    "mewtwomegay": "mewtwo-megay",
+    "miraidon": "miraidon",
+    "naganadel": "naganadel",
+    "necrozmadawnwings": "necrozma-dawnwings",
+    "necrozmaduskmane": "necrozma-duskmane",
+    "necrozmaultra": "necrozma-ultra",
+    "ogerponhearthflame": "ogerpon",
+    "ogerponwellspring": "ogerpon",
+    "palafin": "palafin",
+    "palafinhero": "palafin-hero",
+    "palkia": "palkia",
+    "palkiaorigin": "palkia",
+    "pheromosa": "pheromosa",
+    "raichumegay": "raichu-megay",
+    "rayquaza": "rayquaza",
+    "rayquazamega": "rayquaza-mega",
+    "reshiram": "reshiram",
+    "roaringmoon": "roaringmoon",
+    "sableyemega": "sableye-mega",
+    "salamence": "salamence",
+    "salamencemega": "salamence-mega",
+    "shayminsky": "shaymin-sky",
+    "sneasler": "sneasler",
+    "solgaleo": "solgaleo",
+    "spectrier": "spectrier",
+    "starmiemega": "starmie-mega",
+    "terapagos": "terapagos",
+    "terapagosstellar": "terapagos",
+    "terapagosterastal": "terapagos",
+    "thundurus": "thundurus",
+    "tornadustherian": "tornadus-therian",
+    "ursalunabloodmoon": "ursaluna",
+    "urshifu": "urshifu",
+    "urshifurapidstrike": "urshifu-rapidstrike",
+    "volcarona": "volcarona",
+    "walkingwake": "walkingwake",
+    "wobbuffet": "wobbuffet",
+    "xerneas": "xerneas",
+    "yveltal": "yveltal",
+    "zacian": "zacian",
+    "zaciancrowned": "zacian-crowned",
+    "zamazenta": "zamazenta",
+    "zamazentacrowned": "zamazenta-crowned",
+    "zekrom": "zekrom",
+    "zygarde": "zygarde",
+    "zygardecomplete": "zygarde-complete"
+};
+const revealCryBuffers = new Map();
+let revealReverbBuffer = null;
 let activeRevealAudio = null;
 let revealAudioToken = 0;
 const typePoolSelect = document.getElementById("type-pool-select");
@@ -610,8 +749,6 @@ function prepareAudio() {
     if (audioContext.state === "suspended") {
         audioContext.resume().catch(() => {});
     }
-    loadRevealAudio();
-    rareOUAudioPaths.forEach(path => loadRevealAudio(path));
 
 }
 
@@ -682,29 +819,41 @@ function shouldPlayRevealAudio(pokemon) {
 }
 
 function getRevealAudioPath(pokemon) {
-    return getSpecialPresentation(pokemon)?.className === "special-ou"
-        ? rareOUAudioPaths[Math.floor(Math.random() * rareOUAudioPaths.length)]
-        : "audio/rare-reveal.wav";
+    if (!shouldPlayRevealAudio(pokemon)) return null;
+    const name = pokemonCryNames[pokemon.id];
+    return name ? "https://play.pokemonshowdown.com/audio/cries/" + name + ".mp3" : null;
 }
 
-function loadRevealAudio(path = "audio/rare-reveal.wav") {
-    if (!audioContext) return Promise.resolve(null);
-    if (rareOUAudioPaths.includes(path)) {
-        if (!rareOUAudioBuffers.has(path)) {
-            rareOUAudioBuffers.set(path, fetch(path)
-                .then(response => { if (!response.ok) throw new Error("Audio unavailable"); return response.arrayBuffer(); })
-                .then(buffer => audioContext.decodeAudioData(buffer))
-                .catch(() => { rareOUAudioBuffers.delete(path); return null; }));
-        }
-        return rareOUAudioBuffers.get(path);
-    }
-    if (!revealAudioBufferPromise) {
-        revealAudioBufferPromise = fetch("audio/rare-reveal.wav")
-            .then(response => { if (!response.ok) throw new Error("Audio unavailable"); return response.arrayBuffer(); })
+function loadRevealAudio(pokemon) {
+    const url = getRevealAudioPath(pokemon);
+    if (!audioContext || !url) return Promise.resolve(null);
+    if (!revealCryBuffers.has(url)) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const promise = fetch(url, { signal: controller.signal })
+            .then(response => { if (!response.ok) throw new Error("Cry unavailable"); return response.arrayBuffer(); })
             .then(buffer => audioContext.decodeAudioData(buffer))
-            .catch(() => { revealAudioBufferPromise = null; return null; });
+            .catch(() => { revealCryBuffers.delete(url); return null; })
+            .finally(() => clearTimeout(timeout));
+        revealCryBuffers.set(url, promise);
     }
-    return revealAudioBufferPromise;
+    return revealCryBuffers.get(url);
+}
+
+function getRevealReverbBuffer() {
+    if (revealReverbBuffer) return revealReverbBuffer;
+    const length = Math.ceil(audioContext.sampleRate * 0.32);
+    revealReverbBuffer = audioContext.createBuffer(2, length, audioContext.sampleRate);
+    // A separate deterministic noise source leaves the generator's randomness alone.
+    let seed = 7301;
+    for (let channel = 0; channel < 2; channel++) {
+        const samples = revealReverbBuffer.getChannelData(channel);
+        for (let i = 0; i < length; i++) {
+            seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+            samples[i] = (seed / 4294967296 * 2 - 1) * Math.pow(1 - i / length, 3);
+        }
+    }
+    return revealReverbBuffer;
 }
 
 function stopRevealAudio() {
@@ -718,19 +867,37 @@ function stopRevealAudio() {
 async function playRevealAudio(pokemon) {
     if (!shouldPlayRevealAudio(pokemon) || !audioContext) return false;
     const token = revealAudioToken;
-    const buffer = await loadRevealAudio(getRevealAudioPath(pokemon));
+    let timeout;
+    const buffer = await Promise.race([
+        loadRevealAudio(pokemon),
+        new Promise(resolve => { timeout = setTimeout(() => resolve(null), 250); })
+    ]);
+    clearTimeout(timeout);
     if (!buffer || token !== revealAudioToken || audioContext.state !== "running") return false;
     const source = audioContext.createBufferSource();
-    const gain = audioContext.createGain();
+    const dry = audioContext.createGain();
+    const wet = audioContext.createGain();
+    const reverb = audioContext.createConvolver();
     source.buffer = buffer;
-    gain.gain.setValueAtTime(0.55, audioContext.currentTime);
-    source.connect(gain);
-    gain.connect(audioContext.destination);
-    source.onended = () => {
-        if (activeRevealAudio === source) activeRevealAudio = null;
-        source.disconnect(); gain.disconnect();
+    reverb.buffer = getRevealReverbBuffer();
+    dry.gain.setValueAtTime(0.55, audioContext.currentTime);
+    wet.gain.setValueAtTime(0.10, audioContext.currentTime);
+    source.connect(dry);
+    dry.connect(audioContext.destination);
+    source.connect(reverb);
+    reverb.connect(wet);
+    wet.connect(audioContext.destination);
+    let cleanupTimer, cleaned = false;
+    const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        clearTimeout(cleanupTimer);
+        source.disconnect(); dry.disconnect(); wet.disconnect(); reverb.disconnect();
+        if (activeRevealAudio === playback) activeRevealAudio = null;
     };
-    activeRevealAudio = source;
+    const playback = { stop() { source.onended = null; source.stop(); cleanup(); } };
+    source.onended = () => { cleanupTimer = setTimeout(cleanup, 350); };
+    activeRevealAudio = playback;
     source.start();
     return true;
 }
@@ -901,6 +1068,8 @@ async function playRevealSequence(
 
 
     prepareAudio();
+    // Download only the selected Pokémon's cry while the first two tones play.
+    if (hasRareRevealEffect) loadRevealAudio(previewPokemon);
 
 
     /*
@@ -976,7 +1145,9 @@ async function playRevealSequence(
 
     await sleep(finalToneDelay);
 
-    playRevealTone(300);
+    // Eligible reveals replace tone three with their cry. A failed/slow
+    // download falls back to the tone without playing a late cry afterward.
+    if (!hasRareRevealEffect || !await playRevealAudio(previewPokemon)) playRevealTone(300);
     pulseRevealStage(3);
 
     await sleep(360);
@@ -1001,7 +1172,6 @@ async function playRevealSequence(
     revealOverlay.classList.add(
         "pokemon-revealed"
     );
-    await playRevealAudio(previewPokemon);
 
 
     /*
@@ -1634,7 +1804,7 @@ function getRevealUsageDetails(pokemon) {
 function getRarityCategory(pokemon) {
     if (pokemon.sourceTier === "AG") return { label: "Anything Goes", multiplier: 0.10 };
     const special = getSpecialPresentation(pokemon);
-    if (special) return { label: special.label, multiplier: pokemon.tier === "Uber" ? 0.50 : 0.75 };
+    if (special) return { label: special.label, multiplier: pokemon.tier === "Uber" ? 0.45 : 0.70 };
     return { label: "Standard", multiplier: 1.00 };
 }
 
