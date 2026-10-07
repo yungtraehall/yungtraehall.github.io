@@ -141,6 +141,7 @@ const revealTierColors = {
 let revealInProgress = false;
 let audioContext = null;
 let revealExplosionBufferPromise = null;
+let revealExplosionMedia = null;
 // Verified against Showdown's MP3 directory. Forms without distinct recordings
 // deliberately share their species cry (e.g. Arceus types and Ogerpon masks).
 const pokemonCryNames = {
@@ -283,6 +284,8 @@ const pokemonCryNames = {
 };
 const revealCryBuffers = new Map();
 const revealCryMedia = new Map();
+const revealCryGain = 0.55 * Math.pow(10, -9 / 20);
+const revealCryWetGain = 0.10 * Math.pow(10, -9 / 20);
 let revealReverbBuffer = null;
 const activeRevealAudios = new Set();
 let revealAudioToken = 0;
@@ -850,7 +853,7 @@ function preloadRevealCryMedia(pokemon) {
         // cannot be read by fetch for Web Audio processing.
         const media = new Audio(url);
         media.preload = "auto";
-        media.volume = 0.55;
+        media.volume = revealCryGain;
         media.onerror = () => revealCryMedia.delete(url);
         media.load();
         revealCryMedia.set(url, media);
@@ -863,8 +866,7 @@ function pauseRevealCryMedia(media) {
     try { media.currentTime = 0; } catch (_) { /* Metadata may not be loaded yet. */ }
 }
 
-async function playRevealCryMedia(pokemon, token) {
-    const media = preloadRevealCryMedia(pokemon);
+async function playRevealMedia(media, token) {
     if (!media || token !== revealAudioToken) return false;
     let timeout;
     try {
@@ -886,6 +888,23 @@ async function playRevealCryMedia(pokemon, token) {
     } finally {
         clearTimeout(timeout);
     }
+}
+
+function playRevealCryMedia(pokemon, token) {
+    return playRevealMedia(preloadRevealCryMedia(pokemon), token);
+}
+
+function preloadRevealExplosionMedia() {
+    if (typeof Audio !== "function") return null;
+    if (!revealExplosionMedia) {
+        const media = new Audio("audio/rare-reveal.wav");
+        media.preload = "auto";
+        media.volume = 0.55;
+        media.onerror = () => { if (revealExplosionMedia === media) revealExplosionMedia = null; };
+        media.load();
+        revealExplosionMedia = media;
+    }
+    return revealExplosionMedia;
 }
 
 function loadRevealExplosionAudio() {
@@ -925,6 +944,7 @@ function stopRevealAudio() {
     for (const media of revealCryMedia.values()) {
         if (!media.paused) pauseRevealCryMedia(media);
     }
+    if (revealExplosionMedia && !revealExplosionMedia.paused) pauseRevealCryMedia(revealExplosionMedia);
 }
 
 async function playRevealAudio(pokemon) {
@@ -944,8 +964,8 @@ async function playRevealAudio(pokemon) {
     const reverb = audioContext.createConvolver();
     source.buffer = buffer;
     reverb.buffer = getRevealReverbBuffer();
-    dry.gain.setValueAtTime(0.55, audioContext.currentTime);
-    wet.gain.setValueAtTime(0.10, audioContext.currentTime);
+    dry.gain.setValueAtTime(revealCryGain, audioContext.currentTime);
+    wet.gain.setValueAtTime(revealCryWetGain, audioContext.currentTime);
     source.connect(dry);
     dry.connect(audioContext.destination);
     source.connect(reverb);
@@ -970,6 +990,8 @@ async function playRevealAudio(pokemon) {
 async function playRevealExplosionAudio(pokemon) {
     if (!shouldPlayRevealAudio(pokemon) || !audioContext) return false;
     const token = revealAudioToken;
+    if (await playRevealMedia(preloadRevealExplosionMedia(), token)) return true;
+    if (token !== revealAudioToken) return false;
     let timeout;
     const buffer = await Promise.race([
         loadRevealExplosionAudio(),
@@ -1169,7 +1191,10 @@ async function playRevealSequence(
         loadRevealAudio(previewPokemon);
     }
     // Also preload the legacy explosion effect for its original reveal moment.
-    if (hasRareRevealEffect) loadRevealExplosionAudio();
+    if (hasRareRevealEffect) {
+        preloadRevealExplosionMedia();
+        loadRevealExplosionAudio();
+    }
 
 
     /*

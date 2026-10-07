@@ -74,7 +74,8 @@ Actual draw-slot percentages and rarity colors use the revised weights.
   Distinct form cries are used where present; Arceus types, Ogerpon masks,
   Giratina-Origin, and other forms without distinct files share the species cry.
   Cries preload during the first two tones and cache after decoding. Web Audio
-  mixes 0.55 dry gain with 0.10 wet gain through a stereo convolver with a short
+  mixes approximately 0.195 dry gain with 0.035 wet gain (9 dB lower than the
+  previous cry levels) through a stereo convolver with a short
   0.32-second decaying impulse. Its independent noise does not consume generator
   randomness. Playback and reverb stop on Continue; late loads cannot play.
   Downloads abort after four seconds, and the third tone waits at most 250 ms
@@ -84,7 +85,9 @@ Actual draw-slot percentages and rarity colors use the revised weights.
   fail does the normal third tone play. There is
   no extra cry when the full sprite appears. At the full reveal, the original
   `audio/rare-reveal.wav` effect (restored from `KSIExplosionVerb.wav`) also
-  plays at its previous 0.55 gain. Both sounds stop on Continue. Ordinary OU
+  plays at its previous 0.55 gain. The local WAV preloads as a media element
+  and plays directly at full reveal, with decoded Web Audio as a fallback.
+  Both sounds stop on Continue and may overlap. Ordinary OU
   and UU/below retain all three normal tones and no reveal effect. The three
   newer uploaded WAV effects remain removed.
 - UU uses the normal 650 ms final-tone spacing. OU keeps 1,100 ms and Uber keeps
