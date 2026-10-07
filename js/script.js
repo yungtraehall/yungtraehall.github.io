@@ -891,8 +891,47 @@ async function playRevealMedia(media, token) {
     }
 }
 
-function playRevealCryMedia(pokemon, token) {
-    return playRevealMedia(preloadRevealCryMedia(pokemon), token);
+async function playRevealCryMedia(pokemon, token) {
+    const media = preloadRevealCryMedia(pokemon);
+    return await playRevealMedia(media, token) ? { media } : false;
+}
+
+async function waitForCrySilhouette(playback) {
+    if (playback.media) {
+        const media = playback.media;
+        if (!Number.isFinite(media.duration) || media.duration <= 0) {
+            // MP3 metadata may arrive after play() resolves on a slow connection.
+            await new Promise(resolve => {
+                let timer;
+                const done = () => {
+                    if (!Number.isFinite(media.duration) && !media.ended && !media.error) return;
+                    media.removeEventListener("loadedmetadata", done);
+                    media.removeEventListener("durationchange", done);
+                    media.removeEventListener("ended", done);
+                    media.removeEventListener("error", done);
+                    clearTimeout(timer);
+                    resolve();
+                };
+                for (const event of ["loadedmetadata", "durationchange", "ended", "error"]) {
+                    media.addEventListener(event, done);
+                }
+                timer = setTimeout(() => {
+                    media.removeEventListener("loadedmetadata", done);
+                    media.removeEventListener("durationchange", done);
+                    media.removeEventListener("ended", done);
+                    media.removeEventListener("error", done);
+                    resolve();
+                }, 5000);
+                done();
+            });
+        }
+        if (Number.isFinite(media.duration) && media.duration > 0) {
+            await sleep(Math.max(0, (media.duration - media.currentTime - 0.5) * 1000));
+        }
+        return;
+    }
+    await sleep(Math.max(0, (playback.duration - 0.5 -
+        (audioContext.currentTime - playback.startedAt)) * 1000));
 }
 
 function preloadRevealExplosionMedia() {
@@ -984,7 +1023,7 @@ async function playRevealAudio(pokemon) {
     source.onended = () => { cleanupTimer = setTimeout(cleanup, 350); };
     activeRevealAudios.add(playback);
     source.start();
-    return true;
+    return { duration: buffer.duration, startedAt: audioContext.currentTime };
 }
 
 // Preserve the original post-silhouette reveal cue as a second, separate effect.
@@ -1273,12 +1312,13 @@ async function playRevealSequence(
 
     // Eligible reveals replace tone three with their cry. A failed/slow
     // download falls back to the tone without playing a late cry afterward.
-    const cryPlayed = hasRareRevealEffect && await playRevealAudio(previewPokemon);
-    if (!cryPlayed) playRevealTone(300);
+    const cryPlayback = hasRareRevealEffect && await playRevealAudio(previewPokemon);
+    if (!cryPlayback) playRevealTone(300);
     pulseRevealStage(3);
 
-    // Let the cry ring out before the silhouette and full-reveal sound arrive.
-    await sleep(cryPlayed ? 2000 : 360);
+    // Show the silhouette half a second before this exact cry finishes.
+    if (cryPlayback) await waitForCrySilhouette(cryPlayback);
+    else await sleep(360);
 
 
     /*

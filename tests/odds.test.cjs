@@ -487,7 +487,7 @@ if (process.argv.includes("--simulate")) {
         waitForContinue = async () => takeSnapshot();
         prepareAudio = () => {};
         revealExplosionBufferPromise = Promise.resolve({ legacy: true });
-        Object.values(pokemonCryNames).forEach(name => revealCryBuffers.set("https://play.pokemonshowdown.com/audio/cries/" + name + ".mp3", Promise.resolve({})));
+        Object.values(pokemonCryNames).forEach(name => revealCryBuffers.set("https://play.pokemonshowdown.com/audio/cries/" + name + ".mp3", Promise.resolve({duration: 2})));
         audioContext = {
             state: "running", currentTime: 0, sampleRate: 48000, destination: {},
             createBuffer(channels, length, rate) { const data = Array.from({length:channels}, () => new Float32Array(length)); return { duration: length / rate, getChannelData(channel) { return data[channel]; } }; },
@@ -531,7 +531,7 @@ if (process.argv.includes("--simulate")) {
             assert.equal(element("reveal-usage-percentage").textContent, "");
             assert.equal(context.oscillatorFrequencies.length, reduced ? 0 : notes);
             assert.equal(context.sampleStarts, !reduced && generator.shouldPlayRevealAudio(context.preview) ? 2 : 0);
-            if (!reduced) assert.equal(context.sleepDurations[3], shouldHaveEffect ? 2000 : 360);
+            if (!reduced) assert.equal(context.sleepDurations[3], shouldHaveEffect ? 1500 : 360);
             if (!reduced && shouldHaveEffect) {
                 assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
                 assert.equal(context.audioPhases.length, 2);
@@ -621,7 +621,8 @@ if (process.argv.includes("--simulate")) {
     const mediaEvents = [];
     const mediaPhases = [];
     context.Audio = class {
-        constructor(url) { this.url = url; this.paused = true; this.currentTime = 0; }
+        constructor(url) { this.url = url; this.paused = true; this.currentTime = 0;
+            this.duration = url.includes('magearna.mp3') ? 1.5 : 2; }
         load() { mediaEvents.push('preload'); }
         play() { this.paused = false; mediaEvents.push('play:' + this.url); mediaPhases.push({url:this.url,phase:overlay.className}); return Promise.resolve(); }
         pause() { this.paused = true; mediaEvents.push('pause'); }
@@ -634,7 +635,7 @@ if (process.argv.includes("--simulate")) {
     context.sleepDurations = [];
     vm.runInContext('revealExplosionBufferPromise = Promise.resolve({legacy:true})', context);
     await vm.runInContext('playRevealSequence("OU", preview)', context);
-    assert.equal(context.sleepDurations[3], 2000);
+    assert.equal(context.sleepDurations[3], 1500);
     assert.ok(mediaEvents.includes('play:https://play.pokemonshowdown.com/audio/cries/volcarona.mp3'));
     assert.ok(mediaEvents.includes('play:audio/rare-reveal.wav'));
     assert.ok(mediaPhases.find(event => event.url === 'audio/rare-reveal.wav').phase.includes('pokemon-revealed'));
@@ -643,6 +644,30 @@ if (process.argv.includes("--simulate")) {
     assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
     assert.equal(context.sampleStarts, 0); // Both assets play directly when fetch is blocked.
     assert.ok(mediaEvents.includes('pause'));
+    for (const [id, duration, expectedDelay] of [['gougingfire',2,1500],['magearna',1.5,1000]]) {
+        context.preview = {id,name:id,tier:'Uber',generation:9};
+        vm.runInContext('revealCryBuffers.delete(getRevealAudioPath(preview))', context);
+        context.sleepDurations = [];
+        await vm.runInContext('playRevealSequence("Uber", preview)', context);
+        assert.equal(context.sleepDurations[3], expectedDelay, `${id}: reveal half a second before the cry ends`);
+        assert.ok(mediaEvents.includes(`play:https://play.pokemonshowdown.com/audio/cries/${id}.mp3`));
+    }
+    // If metadata arrives after playback starts, use the remaining playback time.
+    const listeners = new Map();
+    context.lateMedia = {
+        duration: NaN, currentTime: .2, ended: false, error: null,
+        addEventListener(event, fn) { listeners.set(event, fn); },
+        removeEventListener(event) { listeners.delete(event); }
+    };
+    const delayedMetadata = vm.runInContext('waitForCrySilhouette({media:lateMedia})', context);
+    context.lateMedia.duration = 1.5;
+    listeners.get('durationchange')();
+    await delayedMetadata;
+    assert.equal(context.sleepDurations.at(-1), 800);
+    assert.equal(listeners.size, 0);
+    context.shortMedia = {duration:.3,currentTime:0};
+    await vm.runInContext('waitForCrySilhouette({media:shortMedia})', context);
+    assert.equal(context.sleepDurations.at(-1), 0);
     // If local media playback is rejected, the decoded WAV still gets a turn.
     context.Audio = class { constructor() { this.paused = true; } load() {} play() { return Promise.reject(new Error('Media blocked')); } pause() {} };
     vm.runInContext('revealExplosionMedia = null; revealExplosionBufferPromise = Promise.resolve({legacy:true})', context);
