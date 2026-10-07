@@ -5,6 +5,7 @@ const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const revealMarkup = fs.readFileSync(path.join(root, "index.html"), "utf8");
+assert.ok(fs.existsSync(path.join(root, "audio", "rare-reveal.wav")), "the original reveal effect is restored");
 const revealStyles = fs.readFileSync(path.join(root, "css", "styles.css"), "utf8");
 assert.match(revealMarkup, /<div class="reveal-orb">\s*<svg class="reveal-rift"/);
 assert.match(revealStyles, /\.reveal-type-overlay\s*\{[^}]*z-index:\s*4;[^}]*border-radius:\s*50%;[^}]*overflow:\s*hidden;/);
@@ -473,6 +474,7 @@ if (process.argv.includes("--simulate")) {
     context.revealSnapshots = [];
     context.oscillatorFrequencies = [];
     context.sampleStarts = 0;
+    context.audioPhases = [];
     context.takeSnapshot = () => context.revealSnapshots.push({
         classes: overlay.className, color: properties["--reveal-color"],
         label: element("reveal-special-label").textContent,
@@ -482,12 +484,13 @@ if (process.argv.includes("--simulate")) {
         sleep = async () => {};
         waitForContinue = async () => takeSnapshot();
         prepareAudio = () => {};
+        revealExplosionBufferPromise = Promise.resolve({ legacy: true });
         Object.values(pokemonCryNames).forEach(name => revealCryBuffers.set("https://play.pokemonshowdown.com/audio/cries/" + name + ".mp3", Promise.resolve({})));
         audioContext = {
             state: "running", currentTime: 0, sampleRate: 48000, destination: {},
             createBuffer(channels, length, rate) { const data = Array.from({length:channels}, () => new Float32Array(length)); return { duration: length / rate, getChannelData(channel) { return data[channel]; } }; },
             createConvolver() { return { connect() {}, disconnect() {} }; },
-            createBufferSource() { return { connect() {}, start() { sampleStarts++; globalThis.cryPhase = document.getElementById("reveal-overlay").className; }, stop() {}, disconnect() {} }; },
+            createBufferSource() { return { connect() {}, start() { sampleStarts++; audioPhases.push(document.getElementById("reveal-overlay").className); }, stop() {}, disconnect() {} }; },
             createOscillator() { return { frequency: { setValueAtTime(value) { oscillatorFrequencies.push(value); } }, connect() {}, start() {}, stop() {}, disconnect() {} }; },
             createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
         };
@@ -504,6 +507,7 @@ if (process.argv.includes("--simulate")) {
         ]) {
             context.oscillatorFrequencies.length = 0;
             context.sampleStarts = 0;
+            context.audioPhases = [];
             context.preview = { id, name: id, generation: 9, tier, sourceTier, pullProbability: 0.00001 };
             await vm.runInContext('playRevealSequence(preview.tier, preview)', context);
             const snapshot = context.revealSnapshots.at(-1);
@@ -523,16 +527,19 @@ if (process.argv.includes("--simulate")) {
             assert.equal(element("reveal-usage-rank").textContent, "");
             assert.equal(element("reveal-usage-percentage").textContent, "");
             assert.equal(context.oscillatorFrequencies.length, reduced ? 0 : notes);
-            assert.equal(context.sampleStarts, !reduced && generator.shouldPlayRevealAudio(context.preview) ? 1 : 0);
+            assert.equal(context.sampleStarts, !reduced && generator.shouldPlayRevealAudio(context.preview) ? 2 : 0);
             if (!reduced && shouldHaveEffect) {
                 assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
-                assert.ok(!context.cryPhase.includes("rarity-revealed") && !context.cryPhase.includes("pokemon-revealed"));
+                assert.equal(context.audioPhases.length, 2);
+                assert.ok(!context.audioPhases[0].includes("rarity-revealed") && !context.audioPhases[0].includes("pokemon-revealed"));
+                assert.ok(context.audioPhases[1].includes("pokemon-revealed"));
                 assert.equal(vm.runInContext('revealReverbBuffer.duration', context), .32);
             }
         }
     }
     // A late download must not start after the user has continued.
     context.sampleStarts = 0;
+    context.audioPhases = [];
     const revealPhases = [];
     const previousSleep = vm.runInContext('sleep', context);
     context.capturePhase = () => {
@@ -562,19 +569,22 @@ if (process.argv.includes("--simulate")) {
     vm.runInContext('stopRevealAudio(); finishOUAudioLoad({});', context);
     await delayedOUPlayback;
     assert.equal(context.sampleStarts, 0);
-    // Missing cry keeps the third tone and never starts a second sound at reveal.
+    // Missing cry keeps the third tone; the old sound still plays on full reveal.
     context.oscillatorFrequencies.length = 0;
     context.sampleStarts = 0;
+    context.audioPhases = [];
     vm.runInContext('revealCryBuffers.set(getRevealAudioPath({tier:"Uber",id:"mewtwo"}), Promise.resolve(null));', context);
     context.preview = {id:"mewtwo",name:"Mewtwo",tier:"Uber",generation:9};
     await vm.runInContext('playRevealSequence("Uber", preview)', context);
     assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470,300,600]);
-    assert.equal(context.sampleStarts, 0);
+    assert.equal(context.sampleStarts, 1);
+    assert.ok(context.audioPhases[0].includes("pokemon-revealed"));
     const impulse = vm.runInContext('revealReverbBuffer.getChannelData(0)', context);
     assert.ok(impulse.some(value => value !== 0));
     assert.ok(Math.abs(impulse.at(-1)) < 1e-9);
 
     // A slow preload may finish later, but its timed-out playback stays silent.
+    context.sampleStarts = 0;
     vm.runInContext('revealCryBuffers.set(getRevealAudioPath({tier:"Uber",id:"mewtwo"}), new Promise(resolve => { globalThis.finishSlowCry = resolve; }));', context);
     assert.equal(await vm.runInContext('playRevealAudio({tier:"Uber",id:"mewtwo"})', context), false);
     vm.runInContext('finishSlowCry({});', context);
