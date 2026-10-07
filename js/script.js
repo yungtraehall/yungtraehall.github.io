@@ -284,8 +284,9 @@ const pokemonCryNames = {
 };
 const revealCryBuffers = new Map();
 const revealCryMedia = new Map();
-const revealCryGain = 0.55 * Math.pow(10, -9 / 20);
-const revealCryWetGain = 0.10 * Math.pow(10, -9 / 20);
+const revealCryGain = 0.55 * Math.pow(10, -11 / 20);
+const revealCryWetGain = 0.10 * Math.pow(10, -11 / 20);
+const revealExplosionGain = 0.55 * Math.pow(10, 1 / 20);
 let revealReverbBuffer = null;
 const activeRevealAudios = new Set();
 let revealAudioToken = 0;
@@ -899,7 +900,7 @@ function preloadRevealExplosionMedia() {
     if (!revealExplosionMedia) {
         const media = new Audio("audio/rare-reveal.wav");
         media.preload = "auto";
-        media.volume = 0.55;
+        media.volume = revealExplosionGain;
         media.onerror = () => { if (revealExplosionMedia === media) revealExplosionMedia = null; };
         media.load();
         revealExplosionMedia = media;
@@ -1002,7 +1003,7 @@ async function playRevealExplosionAudio(pokemon) {
     const source = audioContext.createBufferSource();
     const gain = audioContext.createGain();
     source.buffer = buffer;
-    gain.gain.setValueAtTime(0.55, audioContext.currentTime);
+    gain.gain.setValueAtTime(revealExplosionGain, audioContext.currentTime);
     source.connect(gain);
     gain.connect(audioContext.destination);
     let cleaned = false;
@@ -1272,10 +1273,12 @@ async function playRevealSequence(
 
     // Eligible reveals replace tone three with their cry. A failed/slow
     // download falls back to the tone without playing a late cry afterward.
-    if (!hasRareRevealEffect || !await playRevealAudio(previewPokemon)) playRevealTone(300);
+    const cryPlayed = hasRareRevealEffect && await playRevealAudio(previewPokemon);
+    if (!cryPlayed) playRevealTone(300);
     pulseRevealStage(3);
 
-    await sleep(360);
+    // Let the cry ring out before the silhouette and full-reveal sound arrive.
+    await sleep(cryPlayed ? 2000 : 360);
 
 
     /*
