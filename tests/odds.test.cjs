@@ -608,5 +608,24 @@ if (process.argv.includes("--simulate")) {
     failDownload = false;
     assert.equal((await vm.runInContext('loadRevealAudio({tier:"OU",id:"volcarona"})', context)).decoded, true);
     assert.equal(downloads, 3);
+    // Showdown media remains playable when a browser rejects cross-origin fetch.
+    const mediaEvents = [];
+    context.Audio = class {
+        constructor(url) { this.url = url; this.paused = true; this.currentTime = 0; }
+        load() { mediaEvents.push('preload'); }
+        play() { this.paused = false; mediaEvents.push('play:' + this.url); return Promise.resolve(); }
+        pause() { this.paused = true; mediaEvents.push('pause'); }
+    };
+    context.fetch = async () => { throw new TypeError('Cross-origin request blocked'); };
+    vm.runInContext('revealCryBuffers.delete(getRevealAudioPath({tier:"OU",id:"volcarona"}));', context);
+    context.preview = {id:'volcarona',name:'Volcarona',tier:'OU',generation:9};
+    context.oscillatorFrequencies.length = 0;
+    context.sampleStarts = 0;
+    vm.runInContext('revealExplosionBufferPromise = Promise.resolve({legacy:true})', context);
+    await vm.runInContext('playRevealSequence("OU", preview)', context);
+    assert.ok(mediaEvents.includes('play:https://play.pokemonshowdown.com/audio/cries/volcarona.mp3'));
+    assert.deepEqual(context.oscillatorFrequencies, [185,370,235,470]);
+    assert.equal(context.sampleStarts, 1); // Restored KSI effect still plays at full reveal.
+    assert.ok(mediaEvents.includes('pause'));
     console.log('PASS: curated reveal colors, normal/reduced-motion lifecycle, state reset, third-tone cry timing, reverb, and cancellation.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
