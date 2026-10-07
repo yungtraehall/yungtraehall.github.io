@@ -92,9 +92,9 @@ Actual draw-slot percentages and rarity colors use the revised weights.
   and UU/below retain all three normal tones and no reveal effect. The three
   newer uploaded WAV effects remain removed.
 - When a cry plays for Rare OU, Uber, Rare Uber, or AG, the silhouette appears
-  half a second before that cry finishes, using the decoded buffer duration or
+  0.8 seconds before that cry finishes, using the decoded buffer duration or
   the direct MP3 player's duration and current playback position. For example,
-  a 2.0-second cry waits 1.5 seconds and a 1.5-second cry waits 1.0 second.
+  a 2.0-second cry waits 1.2 seconds and a 1.5-second cry waits 0.7 seconds.
   If MP3 duration metadata arrives late, the reveal waits for it (or for the
   cry to end) instead of imposing a fixed delay. If the cry fails, the normal
   third tone and its 360 ms silhouette timing remain. The full Pokémon and KSI
