@@ -1,7 +1,7 @@
 # Featured pulls
 
-The approved selection contains 51 exact forms: 42 from the Uber list (including
-all 18 Arceus types), and nine from the OU list. A listed Pokémon receives the
+The approved selection contains 55 exact forms: 42 from the Uber list (including
+all 18 Arceus types), and 13 from the OU list. A listed Pokémon receives the
 treatment when its selected pool classifies it as OU, Uber, or AG. Its current
 tier controls color and weight: burgundy `#800020` and 0.70× for OU, magenta
 `#DF00FF` and 0.45× for Uber. AG retains 0.10× and uses gold `#ffe7a6`
@@ -26,7 +26,12 @@ The previous placeholder Kyogre entry is replaced by the requested Primal form.
 ## Approved OU entries
 
 Dragapult, Garchomp, Kingambit, Gholdengo, Ogerpon-Wellspring, Zamazenta,
-Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y.
+Volcarona, Kyurem (supplied as “Kyreum”), Raichu-Mega-Y, Greninja,
+Greninja-Ash, Greninja-Bond, Greninja-Mega. These forms retain each pool's
+source tier: the Rare OU treatment applies when that form is classified OU.
+For example, Greninja-Mega is UU in Bananza, so it keeps UU odds and styling
+there. Greninja-Bond uses Greninja's animated Showdown sprite when a distinct
+Bond sprite is unavailable; the other three have exact `sprites/ani/` GIFs.
 
 ## Presentation
 
@@ -83,9 +88,9 @@ Actual draw-slot percentages and rarity colors use the revised weights.
   MP3 media element plays the selected cry instead (without Web Audio reverb).
   Media starts have a 500 ms limit and stop on Continue. Only if both cry paths
   fail does the normal third tone play. There is
-  no extra cry when the full sprite appears. At the full reveal, the original
-  `audio/rare-reveal.wav` effect (restored from `KSIExplosionVerb.wav`) also
-  plays at approximately 0.617 gain (1 dB above its previous 0.55 level).
+  no extra cry when the full sprite appears. At the full reveal,
+  `audio/rare-reveal.wav` now contains the supplied `BetterKSIExplosion.wav`
+  recording and plays at approximately 0.617 gain.
   The local WAV preloads as a media element
   and plays directly at full reveal, with decoded Web Audio as a fallback.
   Both sounds stop on Continue and may overlap. Ordinary OU
@@ -125,3 +130,7 @@ against the cached modern species typing; either type of a dual-type Pokémon
 qualifies. Type filtering applies to the generator, console simulations, and the
 draw-slot probability calculation. The result details retain the selected type even
 if the dropdown later changes. Other pools ignore the hidden type selection.
+Bananza also offers a 1–6 Pokémon count (default six). Only that many distinct
+Pokémon are drawn and displayed; card reveal and console simulations use the
+same count. Every other pool always generates six, even if Bananza was last set
+to a smaller count.

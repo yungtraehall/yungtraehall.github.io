@@ -32,6 +32,7 @@ function element(id) {
 }
 
 element("pool-select").value = "gen9";
+element("bananza-count-select").value = "6";
 element("tier-select").value = "Uber";
 element("tier-select").options = tiers.map(value => ({ value, disabled: false }));
 Object.defineProperty(element("tier-select"), "selectedOptions", {
@@ -72,7 +73,7 @@ for (const filename of dataFiles) {
 vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), context);
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles,
-    generateTeam, getTierSelectionData, getPokemonPullWeight,
+    generateTeam, getSelectedTeamSize, getTierSelectionData, getPokemonPullWeight,
     simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getSpecialPresentation, getRevealTypes, getRevealUsageDetails, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
@@ -130,6 +131,10 @@ for (let gen = 1; gen <= 4; gen++) {
 }
 assert.match(generator.getPokemonSpriteUrls("Mewtwo", 5)[0], /gen5ani\/mewtwo\.gif$/);
 assert.match(generator.getPokemonSpriteUrls("Mewtwo", 9)[0], /sprites\/ani\/mewtwo\.gif$/);
+for (const [name, slug] of [["Greninja","greninja"],["Greninja-Ash","greninja-ash"],["Greninja-Mega","greninja-mega"]]) {
+    assert.equal(generator.getPokemonSpriteUrls(name, 9)[0], `https://play.pokemonshowdown.com/sprites/ani/${slug}.gif`);
+}
+assert.ok(generator.getPokemonSpriteUrls("Greninja-Bond", 9).includes("https://play.pokemonshowdown.com/sprites/ani/greninja.gif"));
 assert.equal(generator.getFinalToneDelay("Uber") - generator.getFinalToneDelay("OU"), 250);
 assert.equal(generator.getFinalToneDelay("UU"), 650);
 
@@ -208,11 +213,33 @@ generator.renderTeam([
 assert.ok(!cards[0].classes.has("special-ag"));
 assert.ok(!cards[1].classes.has("special-ou"));
 assert.ok(!cards[0].innerHTML.includes("pokemon-pull-rarity"));
+generator.renderTeam([{ id:"greninjabond", name:"Greninja-Bond", tier:"OU", generation:9, pullProbability:.001 }]);
+assert.equal(element("results").dataset.count, 1);
+assert.equal(cards[0].hidden, false);
+assert.equal(cards[1].hidden, true);
+assert.equal(cards[2].hidden, true);
+assert.ok(cards[0].classes.has("special-ou"));
+assert.ok(cards[0].innerHTML.includes("Rare OU"));
+vm.runInContext('revealPokemonCards(0)', context);
+assert.ok(cards[0].classes.has("card-reveal"));
+assert.equal(vm.runInContext('cardRevealTimers.length', context), 0);
+generator.renderTeam([
+    { id:"greninjabond", name:"Greninja-Bond", tier:"OU", generation:9 },
+    { id:"greninja", name:"Greninja", tier:"UU", generation:9 },
+    { id:"greninjamega", name:"Greninja-Mega", tier:"UU", generation:9 }
+]);
+assert.equal(element("results").dataset.count, 3);
+assert.ok(cards.every(card => !card.hidden));
+assert.ok(!cards[2].classes.has("special-ou"));
 cards.length = 0;
 
 // Exact forms, all Arceus types, and generation-dependent tier colors.
 assert.equal(generator.FEATURED_RARE_UBERS.size, 42);
-assert.equal(generator.RARE_OU_POKEMON.size, 9);
+assert.equal(generator.RARE_OU_POKEMON.size, 13);
+for (const id of ["greninja","greninjaash","greninjabond","greninjamega"]) {
+    assert.ok(generator.RARE_OU_POKEMON.has(id));
+    assert.equal(generator.getPokemonPullWeight({id,tier:"OU",usageModifier:1}), .70);
+}
 for (const id of generator.FEATURED_RARE_UBERS) {
     assert.ok(Object.values(generator.datasets).some(pool => pool.some(p => p.id === id)), `Unknown featured form: ${id}`);
     assert.equal(generator.getSpecialPresentation({ id, tier: "Uber" }).color, "#DF00FF");
@@ -376,6 +403,24 @@ element("pool-select").value = "bananza";
 element("type-pool-select").value = "Bug";
 generator.updateTierAvailability();
 assert.equal(element("type-pool-setting").hidden, false);
+assert.equal(element("bananza-count-setting").hidden, false);
+for (let count = 1; count <= 6; count++) {
+    element("bananza-count-select").value = String(count);
+    assert.equal(generator.getSelectedTeamSize(), count);
+    const pool = generator.getActivePokemonPool("bananza", "Bug");
+    const team = generator.generateTeam(pool, "Uber", "=", count);
+    assert.equal(team.length, count);
+    assert.equal(new Set(team.map(p => p.id)).size, count);
+    verifySlotProbabilities(team, pool, "Uber", "=");
+    generator.updateTierAvailability();
+    assert.equal(element("generate-button").disabled, false);
+}
+assert.throws(() => generator.generateTeam(generator.datasets.bananza, "Uber", "=", 0), /Pokémon count/);
+element("bananza-count-select").value = "1";
+const oneSimulation = generator.simulateTeams(10);
+assert.equal(oneSimulation.teamSize, 1);
+assert.equal(oneSimulation.totalPokemon, 10);
+element("bananza-count-select").value = "6";
 context.checkSimulationPool = pool => assert.ok(pool.every(p => context.details[p.id].modern.types.includes("Bug")));
 vm.runInContext('const originalGenerateForTypeTest = generateTeam; generateTeam = (...args) => { checkSimulationPool(args[0]); return originalGenerateForTypeTest(...args); }; globalThis.generator.simulateTeams = simulateTeams;', context);
 const typeSimulation = generator.simulateTeams(10);
@@ -385,6 +430,10 @@ assert.equal(typeSimulation.totalPokemon, 60);
 element("pool-select").value = "gen9";
 generator.updateTierAvailability();
 assert.equal(element("type-pool-setting").hidden, true);
+assert.equal(element("bananza-count-setting").hidden, true);
+element("bananza-count-select").value = "1";
+assert.equal(generator.getSelectedTeamSize(), 6);
+element("bananza-count-select").value = "6";
 for (const p of [{id:"garchomp",tier:"OU"},{id:"mewtwo",tier:"Uber"},{id:"zacian",tier:"Uber"},{id:"ag",sourceTier:"AG",tier:"Uber"}]) {
     assert.equal(generator.shouldPlayRevealAudio(p), true);
 }

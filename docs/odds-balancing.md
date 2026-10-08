@@ -24,7 +24,7 @@ OU and Uber keep their existing individual usage adjustment. UU and lower are eq
 
 Every Pokémon, from ZU through AG, shows its actual draw-slot probability, formatted as a percentage: `Rare · 0.26% Chance` for a 1-in-392 chance. All tiers use the same probability thresholds and colors. This replaces the earlier OU-and-above-only badges and comparison among OU+ pulls.
 
-The probability is the product of the chance to select the Pokémon's tier and its weighted share of the remaining Pokémon in that tier. It uses the selected generation/pool, Bananza type filter, maximum tier, Odds setting, missing-tier folding, and exclusions from earlier picks in this team. It describes the chance at that particular draw, rather than the chance of obtaining the Pokémon anywhere in a six-Pokémon team. Generation stores `pullProbability` with each result; later dropdown changes do not relabel an already generated team. The OU/UU profile adjustment is automatically reflected in each generated percentage and rarity color.
+The probability is the product of the chance to select the Pokémon's tier and its weighted share of the remaining Pokémon in that tier. It uses the selected generation/pool, Bananza type filter and 1–6 Pokémon count, maximum tier, Odds setting, missing-tier folding, and exclusions from earlier picks in this team. It describes the chance at that particular draw, rather than the chance of obtaining the Pokémon anywhere in the generated team. Generation stores `pullProbability` with each result; later dropdown changes do not relabel an already generated team. The OU/UU profile adjustment is automatically reflected in each generated percentage and rarity color.
 
 | Rarity | Actual slot chance | Badge color |
 | --- | --- | --- |
@@ -44,14 +44,14 @@ At Uber++ in the first draw slot, Mewtwo has approximately 2.98% chance in Gen 1
 
 ## Individual rarity categories
 
-The reviewed category multipliers now apply within each tier. The user-approved lists contain 42 Uber forms and nine OU Pokémon; see `featured-pulls.md`. Listed Pokémon follow their actual pool tier when applying the 0.50× Uber or 0.75× OU modifier.
+The reviewed category multipliers now apply within each tier. The curated lists contain 42 Uber forms and 13 OU-listed forms; see `featured-pulls.md`. Listed Pokémon follow their actual pool tier when applying the 0.45× Uber or 0.70× OU modifier. Greninja forms in UU retain their source tier and ordinary UU odds.
 
 | Category | Multiplier | Pokemon |
 | --- | ---: | --- |
 | AG | 0.10x | Calyrex-Shadow, Koraidon, Miraidon, Rayquaza-Mega, Xerneas; Bananza only |
-| Featured rare Ubers | 0.50x | 42 approved forms, including all 18 Arceus types (see `featured-pulls.md`) |
+| Featured rare Ubers | 0.45x | 42 approved forms, including all 18 Arceus types (see `featured-pulls.md`) |
 | Other Ubers | 1.00x | Includes Ho-Oh |
-| Selected rare OU | 0.75x | Dragapult, Garchomp, Kingambit, Gholdengo, Ogerpon-Wellspring, Zamazenta, Volcarona, Kyurem, Raichu-Mega-Y |
+| Selected rare OU | 0.70x | Dragapult, Garchomp, Kingambit, Gholdengo, Ogerpon-Wellspring, Zamazenta, Volcarona, Kyurem, Raichu-Mega-Y, Greninja, Greninja-Ash, Greninja-Bond, Greninja-Mega (when OU) |
 | Other OU | 1.00x | Remaining OU entries |
 | UU and lower | 1.00x | Equal within each tier |
 

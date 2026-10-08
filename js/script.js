@@ -104,6 +104,8 @@ const oddsSelect =
 
 const pokemonCards =
     document.querySelectorAll(".pokemon-card");
+const resultsContainer = document.getElementById("results");
+let cardRevealTimers = [];
 
 const revealOverlay =
     document.getElementById("reveal-overlay");
@@ -205,6 +207,9 @@ const pokemonCryNames = {
     "giratinaorigin": "giratina",
     "gougingfire": "gougingfire",
     "greninja": "greninja",
+    "greninjaash": "greninja",
+    "greninjabond": "greninja",
+    "greninjamega": "greninja-mega",
     "groudon": "groudon",
     "groudonprimal": "groudon-primal",
     "hooh": "hooh",
@@ -294,6 +299,8 @@ let revealAudioToken = 0;
 const typePoolSelect = document.getElementById("type-pool-select");
 const typePoolSetting = document.getElementById("type-pool-setting");
 const typePoolNote = document.getElementById("type-pool-note");
+const bananzaCountSetting = document.getElementById("bananza-count-setting");
+const bananzaCountSelect = document.getElementById("bananza-count-select");
 
 
 /*
@@ -316,6 +323,7 @@ poolSelect.addEventListener(
 );
 
 typePoolSelect.addEventListener("change", updateTierAvailability);
+bananzaCountSelect.addEventListener("change", updateTierAvailability);
 updateTierAvailability();
 
 
@@ -336,14 +344,21 @@ function getActivePokemonPool(poolName, selectedType = "All") {
     return pool.filter(pokemon => POKEMON_DETAILS_DATA[pokemon.id]?.modern.types.includes(selectedType));
 }
 
+function getSelectedTeamSize() {
+    if (poolSelect.value !== "bananza") return 6;
+    const count = Number(bananzaCountSelect.value);
+    return Number.isInteger(count) && count >= 1 && count <= 6 ? count : 6;
+}
+
 function updateTierAvailability() {
 
     const isBananza = poolSelect.value === "bananza";
     typePoolSetting.hidden = !isBananza;
+    bananzaCountSetting.hidden = !isBananza;
     const selectedType = isBananza ? (typePoolSelect.value || "All") : "All";
     const pokemonPool = getActivePokemonPool(poolSelect.value, selectedType);
     typePoolNote.textContent = pokemonPool.length + " Pokémon available. Dual-type Pokémon match either type.";
-    if (!revealInProgress) generateButton.disabled = pokemonPool.length < 6;
+    if (!revealInProgress) generateButton.disabled = pokemonPool.length < getSelectedTeamSize();
 
     // Champions OU is an OU-only pool, even if Uber was selected before.
     const hasTierCeiling = poolSelect.value !== "bananza";
@@ -458,9 +473,11 @@ async function generatePokemon() {
     const selectedOdds =
         oddsSelect.value;
 
+    const teamSize = getSelectedTeamSize();
+
 
     /*
-        Generate the six Pokémon immediately.
+        Generate the requested Pokémon immediately.
 
         The animation does NOT affect the odds.
         It only hides the already-generated result.
@@ -470,12 +487,13 @@ async function generatePokemon() {
         generateTeam(
             pokemonPool,
             selectedTier,
-            selectedOdds
+            selectedOdds,
+            teamSize
         );
 
 
     /*
-        Find the strongest tier in the six.
+        Find the strongest tier in the team.
 
         That tier decides the reveal color.
     */
@@ -560,7 +578,18 @@ function getRarityDetails(pokemon) {
 
 function renderTeam(generatedPokemon) {
 
+    cardRevealTimers.forEach(clearTimeout);
+    cardRevealTimers = [];
+    resultsContainer.dataset.count = generatedPokemon.length;
+
     for (let i = 0; i < pokemonCards.length; i++) {
+
+        if (i >= generatedPokemon.length) {
+            pokemonCards[i].hidden = true;
+            continue;
+        }
+
+        pokemonCards[i].hidden = false;
 
         const pokemon =
             generatedPokemon[i];
@@ -576,7 +605,7 @@ function renderTeam(generatedPokemon) {
         /*
             Start every new card hidden.
 
-            After the color reveal finishes, the six
+            After the color reveal finishes, the generated
             cards are shown one after another.
         */
 
@@ -601,7 +630,7 @@ function renderTeam(generatedPokemon) {
             </div>
             ${getRarityCategory(pokemon).label !== "Standard" ? `<div class="pokemon-category">${getRarityCategory(pokemon).label}</div>` : ""}
             <button class="pokemon-details-button" type="button" aria-label="Details for ${pokemon.name}">Details</button>
-            ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}" title="Chance of this exact Pokémon in its draw slot, using this team's pool, type filter, maximum tier and Odds setting. Earlier picks are excluded. This is not the chance of finding it anywhere in a six-Pokémon team.">${rarity.displayText}</div>` : ""}
+            ${rarity ? `<div class="pokemon-pull-rarity ${rarity.className}" title="Chance of this exact Pokémon in its draw slot, using this team's pool, type filter, maximum tier and Odds setting. Earlier picks are excluded. This is not the chance of finding it anywhere in the generated team.">${rarity.displayText}</div>` : ""}
         `;
 
         pokemonCards[i].querySelector(".pokemon-details-button").addEventListener("click", () => openPokemonDetails(pokemon));
@@ -637,7 +666,7 @@ function revealPokemonCards(previewIndex) {
 
 
     /*
-        Then reveal only the remaining five Pokémon
+        Then reveal the remaining Pokémon
         with a short stagger.
     */
 
@@ -645,18 +674,18 @@ function revealPokemonCards(previewIndex) {
 
     pokemonCards.forEach(function (card, index) {
 
-        if (index === previewIndex) {
+        if (index === previewIndex || card.hidden) {
             return;
         }
 
         remainingIndex++;
 
-        setTimeout(function () {
+        cardRevealTimers.push(setTimeout(function () {
 
             card.classList.remove("card-hidden");
             card.classList.add("card-reveal");
 
-        }, remainingIndex * 110);
+        }, remainingIndex * 110));
 
     });
 
@@ -1507,6 +1536,9 @@ function getPokemonSpriteSlugs(name) {
         pieces.join("")
     );
 
+    // Bond has no separate Showdown animation; try Greninja after its own slugs.
+    if (normalizedName === "greninja-bond") candidates.push("greninja");
+
 
     /*
         Remove duplicate candidates while preserving
@@ -1674,15 +1706,20 @@ function setPokemonSpriteWithFallback(
 
 /*
     =========================================
-    GENERATE SIX POKÉMON
+    GENERATE POKÉMON
     =========================================
 */
 
 function generateTeam(
     pokemonPool,
     selectedTier,
-    selectedOdds
+    selectedOdds,
+    count = 6
 ) {
+
+    if (!Number.isInteger(count) || count < 1 || count > 6) {
+        throw new RangeError("Pokémon count must be between 1 and 6");
+    }
 
     const selectedTierPosition =
         tierOrder.indexOf(selectedTier);
@@ -1718,10 +1755,10 @@ function generateTeam(
 
 
     /*
-        Generate six Pokémon.
+        Generate the requested number of Pokémon.
     */
 
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < count; i++) {
 
         /*
             STAGE 1:
@@ -1772,7 +1809,7 @@ function generateTeam(
 
         /*
             Remove this exact Pokémon/form from
-            the current six-Pokémon generation.
+            the current generation.
         */
 
         const selectedIndex =
@@ -1887,7 +1924,8 @@ const FEATURED_RARE_UBERS = new Set([
         .map(type => "arceus" + type)
 ]);
 const RARE_OU_POKEMON = new Set([
-    "dragapult", "garchomp", "kingambit", "gholdengo", "ogerponwellspring", "zamazenta", "volcarona", "kyurem", "raichumegay"
+    "dragapult", "garchomp", "kingambit", "gholdengo", "ogerponwellspring", "zamazenta", "volcarona", "kyurem", "raichumegay",
+    "greninja", "greninjaash", "greninjabond", "greninjamega"
 ]);
 
 function isFeaturedPokemon(pokemon) {
@@ -2208,6 +2246,8 @@ function simulateTeams(numberOfTeams = 10000) {
     const selectedOdds =
         oddsSelect.value;
 
+    const teamSize = getSelectedTeamSize();
+
     const selectedType = selectedPool === "bananza" ? (typePoolSelect.value || "All") : "All";
     const pokemonPool = getActivePokemonPool(selectedPool, selectedType);
 
@@ -2232,7 +2272,8 @@ function simulateTeams(numberOfTeams = 10000) {
             generateTeam(
                 pokemonPool,
                 selectedTier,
-                selectedOdds
+                selectedOdds,
+                teamSize
             );
 
 
@@ -2258,7 +2299,7 @@ function simulateTeams(numberOfTeams = 10000) {
 
 
     const totalPokemon =
-        numberOfTeams * 6;
+        numberOfTeams * teamSize;
 
 
     const results = {};
@@ -2309,6 +2350,7 @@ function simulateTeams(numberOfTeams = 10000) {
         selectedType,
         selectedTier,
         selectedOdds,
+        teamSize,
         tierCounts,
         results,
         teamsWithUber,
