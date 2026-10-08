@@ -31,7 +31,7 @@
         <h1>Pokémon Random Generator</h1>
 
         <p class="description">
-            Generate six random Pokémon.
+            Generate random Pokémon. Bananza lets you choose one to six.
         </p>
 
         <div class="generator-settings">
@@ -79,6 +79,18 @@
                     <option value="Water">Water</option>
                 </select>
                 <small id="type-pool-note" aria-live="polite"></small>
+            </div>
+
+            <div class="setting" id="bananza-count-setting" hidden>
+                <label for="bananza-count-select">Pokémon to Generate</label>
+                <select id="bananza-count-select">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6" selected>6</option>
+                </select>
             </div>
 
             <div class="setting" id="maximum-tier-setting">
@@ -129,7 +141,7 @@
     <!--
         Full-screen reveal sequence.
 
-        The generator secretly creates the six Pokémon first.
+        The generator secretly creates the selected Pokémon first.
         This overlay then reveals only the color of the
         strongest tier before the actual Pokémon are shown.
     -->
