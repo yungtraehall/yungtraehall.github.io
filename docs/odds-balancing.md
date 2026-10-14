@@ -16,6 +16,21 @@ Percentages below are per Pokemon slot, with Uber as the maximum and every tier 
 
 The latest balance moves 0.5, 0.75, 1, 0.5, and 0.1 percentage points from OU to UU at --, -, =, +, and ++ respectively. All other tier weights are preserved. In particular, ++ changes only from 38% OU / 25% UU to 37.9% OU / 25.1% UU. The revised profiles retain the earlier overall OU/Uber boost.
 
+Bananza uses separate tier targets because its All-types roster contains only
+RU, UU, OU, and Uber. This avoids silently folding the missing NU/PU/ZU weights
+into RU. Targets below are per draw; a 100,000-team simulation will fluctuate
+slightly around them. Filtered Bananza types still normalize among available
+tiers, and exhausted tiers are removed for later draws. Other pools use the
+standard profile above.
+
+| Bananza tier | -- | - | = | + | ++ |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Uber | 1.03% | 1.50% | 2.47% | 4.53% | 7.01% |
+| OU | 6.47% | 10.76% | 20.01% | 30.00% | 38.82% |
+| UU | 20.51% | 24.05% | 26.52% | 34.45% | 37.20% |
+| RU | 71.99% | 63.69% | 51.00% | 31.02% | 16.97% |
+| NU/PU/ZU | 0% | 0% | 0% | 0% | 0% |
+
 Lower maximum tiers remove stronger tier weights and normalize the remaining weights. A tier absent from the pool folds into the nearest weaker tier, or the nearest stronger tier if none exists below it. This preserves the previous handling of historical and Champions pools. A tier exhausted by selecting its last member rebalances among remaining tiers. Teams still contain six distinct Pokemon/forms.
 
 OU and Uber keep their existing individual usage adjustment. UU and lower are equal within their tiers. The tier increase therefore also increases individual OU and Uber chances.
@@ -28,7 +43,8 @@ The probability is the product of the chance to select the Pokémon's tier and i
 
 | Rarity | Actual slot chance | Badge color |
 | --- | --- | --- |
-| Common | ≥1% | Muted green |
+| Common | ≥5% | Muted green |
+| Uncommon | ≥1% and <5% | Teal |
 | Rare | ≥0.10% and <1% | Blue |
 | Very Rare | ≥0.01% and <0.10% | Purple |
 | Ultra Rare | <0.01% | Gold |
@@ -40,7 +56,7 @@ Rare OU uses a 0.70× individual weight (previously 0.75×), and Rare Uber uses
 in the same tier. Tier profiles and AG's 0.10× modifier are preserved; displayed
 percentages and colors use the new actual draw-slot probabilities.
 
-At Uber++ in the first draw slot, Mewtwo has approximately 2.98% chance in Gen 1, 0.0995% in National Dex, and 0.0988% in Bananza with these category weights. The last two remain Very Rare. Strengthening Odds increases the OU/Uber chances when those tiers compete with lower tiers. If a type filter leaves only one available tier, its share is already 100%, and changing tier Odds cannot increase it further.
+At Uber++ in the first draw slot, Mewtwo has approximately 2.98% chance in Gen 1, 0.0995% in National Dex, and 0.09894% in Bananza with these category weights. The last two remain Very Rare. Strengthening Odds increases the OU/Uber chances when those tiers compete with lower tiers. If a type filter leaves only one available tier, its share is already 100%, and changing tier Odds cannot increase it further.
 
 ## Individual rarity categories
 

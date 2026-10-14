@@ -41,6 +41,17 @@ const tierOddsProfiles = {
     "++": { ZU: 1, PU: 2, NU: 9, RU: 18, UU: 25.1, OU: 37.9, Uber: 7 }
 };
 
+// Bananza contains only RU, UU, OU, and Uber. Use explicit targets there so
+// the absent NU/PU/ZU tiers do not silently add their shares to RU.
+const bananzaOddsProfiles = {
+    "--": { ZU: 0, PU: 0, NU: 0, RU: 71.99, UU: 20.51, OU: 6.47, Uber: 1.03 },
+    "-":  { ZU: 0, PU: 0, NU: 0, RU: 63.69, UU: 24.05, OU: 10.76, Uber: 1.50 },
+    "=":  { ZU: 0, PU: 0, NU: 0, RU: 51.00, UU: 26.52, OU: 20.01, Uber: 2.47 },
+    "+":  { ZU: 0, PU: 0, NU: 0, RU: 31.02, UU: 34.45, OU: 30.00, Uber: 4.53 },
+    "++": { ZU: 0, PU: 0, NU: 0, RU: 16.97, UU: 37.20, OU: 38.82, Uber: 7.01 }
+};
+const bananzaPoolMembers = new WeakSet(BANANZA_POKEMON);
+
 
 /*
     Individual Pokémon modifiers.
@@ -558,6 +569,8 @@ function getRarityDetails(pokemon) {
         label = "Very Rare"; className = "rarity-very-rare";
     } else if (probability < 0.01) {
         label = "Rare"; className = "rarity-rare";
+    } else if (probability < 0.05) {
+        label = "Uncommon"; className = "rarity-uncommon";
     } else {
         label = "Common"; className = "rarity-common";
     }
@@ -567,7 +580,7 @@ function getRarityDetails(pokemon) {
     let decimals = percentage < 0.01
         ? Math.max(2, 1 - Math.floor(Math.log10(percentage))) : 2;
     const upperBound = label === "Ultra Rare" ? 0.01
-        : (label === "Very Rare" ? 0.1 : (label === "Rare" ? 1 : Infinity));
+        : (label === "Very Rare" ? 0.1 : (label === "Rare" ? 1 : (label === "Uncommon" ? 5 : Infinity)));
     while (decimals < 100 && Number(percentage.toFixed(decimals)) >= upperBound) decimals++;
     const chanceText = (decimals > 100
         ? percentage.toExponential(1) : percentage.toFixed(decimals)) + "% Chance";
@@ -1844,7 +1857,8 @@ function getTierSelectionData(
 ) {
     const selectedTierPosition = tierOrder.indexOf(selectedTier);
     const ceilingTiers = tierOrder.slice(0, selectedTierPosition + 1);
-    const profile = tierOddsProfiles[selectedOdds] || tierOddsProfiles["="];
+    const profiles = bananzaPoolMembers.has(pokemonPool[0]) ? bananzaOddsProfiles : tierOddsProfiles;
+    const profile = profiles[selectedOdds] || profiles["="];
 
     const structuralTiers = ceilingTiers.filter(function (tier) {
         return pokemonPool.some(function (pokemon) {
