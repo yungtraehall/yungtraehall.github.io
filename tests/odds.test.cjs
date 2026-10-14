@@ -95,7 +95,7 @@ for (const profile of Object.values(generator.tierOddsProfiles)) {
 const bananzaTargets = {
     "--": {Uber:1.03, OU:6.47, UU:20.51, RU:71.99},
     "-":  {Uber:1.50, OU:10.76, UU:24.05, RU:63.69},
-    "=":  {Uber:2.47, OU:20.01, UU:26.52, RU:51.00},
+    "=":  {Uber:2.65, OU:14.75, UU:29.52, RU:53.08},
     "+":  {Uber:4.53, OU:30.00, UU:34.45, RU:31.02},
     "++": {Uber:7.01, OU:38.82, UU:37.20, RU:16.97}
 };

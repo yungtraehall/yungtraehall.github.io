@@ -46,7 +46,7 @@ const tierOddsProfiles = {
 const bananzaOddsProfiles = {
     "--": { ZU: 0, PU: 0, NU: 0, RU: 71.99, UU: 20.51, OU: 6.47, Uber: 1.03 },
     "-":  { ZU: 0, PU: 0, NU: 0, RU: 63.69, UU: 24.05, OU: 10.76, Uber: 1.50 },
-    "=":  { ZU: 0, PU: 0, NU: 0, RU: 51.00, UU: 26.52, OU: 20.01, Uber: 2.47 },
+    "=":  { ZU: 0, PU: 0, NU: 0, RU: 53.08, UU: 29.52, OU: 14.75, Uber: 2.65 },
     "+":  { ZU: 0, PU: 0, NU: 0, RU: 31.02, UU: 34.45, OU: 30.00, Uber: 4.53 },
     "++": { ZU: 0, PU: 0, NU: 0, RU: 16.97, UU: 37.20, OU: 38.82, Uber: 7.01 }
 };
