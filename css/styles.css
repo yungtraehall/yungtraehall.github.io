@@ -1353,6 +1353,7 @@ body.reveal-active {
 .pokemon-pull-rarity { margin-top:7px; padding:4px 9px; border:1px solid rgba(255,255,255,.18); border-radius:999px; font-size:11px; font-weight:700; color:#e7eaf0; background:rgba(255,255,255,.06); }
 /* Rarity colors follow slot probability; featured frames keep their own colors. */
 :is(.pokemon-pull-rarity, .reveal-pull-chance).rarity-common { --rarity-text:#d8eee6; --rarity-rgb:120,170,150; }
+:is(.pokemon-pull-rarity, .reveal-pull-chance).rarity-uncommon { --rarity-text:#b8f4eb; --rarity-rgb:55,191,175; }
 :is(.pokemon-pull-rarity, .reveal-pull-chance).rarity-rare { --rarity-text:#d6e7ff; --rarity-rgb:91,160,255; }
 :is(.pokemon-pull-rarity, .reveal-pull-chance).rarity-very-rare { --rarity-text:#f0d7ff; --rarity-rgb:194,118,255; }
 :is(.pokemon-pull-rarity, .reveal-pull-chance).rarity-ultra-rare { --rarity-text:#ffe7a6; --rarity-rgb:255,214,112; }

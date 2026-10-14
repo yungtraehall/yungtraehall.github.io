@@ -41,7 +41,7 @@ Actual draw-slot percentages and rarity colors use the revised weights.
 
 - Listed pulls have a matching tier badge, category label, colored card border,
   and neon glow. Rarity badges appear on every Pokémon and show the actual
-  percentage chance for that draw slot. Common, Rare, Very Rare, and Ultra Rare
+  percentage chance for that draw slot. Common, Uncommon, Rare, Very Rare, and Ultra Rare
   labels and badge colors follow unrounded probability using the thresholds in
   `odds-balancing.md`. Featured/AG categories do not impose a minimum label.
   Featured frames remain burgundy/magenta/gold independently of the rarity badge.

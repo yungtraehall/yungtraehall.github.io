@@ -72,7 +72,7 @@ for (const filename of dataFiles) {
 }
 vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), context);
 vm.runInContext(`globalThis.generator = {
-    datasets, tierOddsProfiles,
+    datasets, tierOddsProfiles, bananzaOddsProfiles,
     generateTeam, getSelectedTeamSize, getTierSelectionData, getPokemonPullWeight,
     simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getSpecialPresentation, getRevealTypes, getRevealUsageDetails, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
@@ -92,6 +92,23 @@ for (const [id, name] of [["raichumegay","raichu-megay"],["zaciancrowned","zacia
 for (const profile of Object.values(generator.tierOddsProfiles)) {
     assert.equal(Object.values(profile).reduce((sum, value) => sum + value, 0), 100);
 }
+const bananzaTargets = {
+    "--": {Uber:1.03, OU:6.47, UU:20.51, RU:71.99},
+    "-":  {Uber:1.50, OU:10.76, UU:24.05, RU:63.69},
+    "=":  {Uber:2.47, OU:20.01, UU:26.52, RU:51.00},
+    "+":  {Uber:4.53, OU:30.00, UU:34.45, RU:31.02},
+    "++": {Uber:7.01, OU:38.82, UU:37.20, RU:16.97}
+};
+for (const [mode, targets] of Object.entries(bananzaTargets)) {
+    const profile = generator.bananzaOddsProfiles[mode];
+    for (const [tier, target] of Object.entries(targets)) assert.equal(profile[tier], target);
+    for (const tier of ["ZU","PU","NU"]) assert.equal(profile[tier], 0);
+    assert.ok(Math.abs(Object.values(profile).reduce((sum, weight) => sum + weight, 0) - 100) < 1e-10);
+    const selection = generator.getTierSelectionData(generator.datasets.bananza, generator.datasets.bananza, "Uber", mode);
+    for (const [tier, target] of Object.entries(targets)) assert.equal(selection.tierWeights[tier], target);
+}
+// National Dex shares the tier roster but keeps the standard profile.
+assert.equal(generator.getTierSelectionData(generator.datasets.nationaldex, generator.datasets.nationaldex, "Uber", "=").tierWeights.RU, 54);
 
 const strongest = generator.tierOddsProfiles["++"];
 assert.ok(strongest.Uber >= 5 && strongest.Uber <= 8);
@@ -147,7 +164,9 @@ for (const tier of tiers) {
         [0.00099999, "Very Rare", "rarity-very-rare"],
         [0.001, "Rare", "rarity-rare"],
         [0.00999999, "Rare", "rarity-rare"],
-        [0.01, "Common", "rarity-common"],
+        [0.01, "Uncommon", "rarity-uncommon"],
+        [0.04999999, "Uncommon", "rarity-uncommon"],
+        [0.05, "Common", "rarity-common"],
         [1, "Common", "rarity-common"]
     ]) {
         const rarity = generator.getRarityDetails({ tier, pullProbability });
@@ -165,6 +184,7 @@ assert.equal(exampleRarity.displayText, "Rare · 0.26% Chance");
 assert.equal(generator.getRarityDetails({ tier: "Uber", pullProbability: 0.00096552 }).displayText, "Very Rare · 0.097% Chance");
 assert.equal(generator.getRarityDetails({ tier: "Uber", pullProbability: 0.00009999 }).displayText, "Ultra Rare · 0.009999% Chance");
 assert.equal(generator.getRarityDetails({ tier: "OU", pullProbability: 0.00999999 }).displayText, "Rare · 0.999999% Chance");
+assert.equal(generator.getRarityDetails({ tier: "OU", pullProbability: 0.04999999 }).displayText, "Uncommon · 4.999999% Chance");
 assert.doesNotThrow(() => generator.getRarityDetails({ tier: "Uber", pullProbability: 1e-300 }));
 assert.equal(generator.getRarityDetails({ tier: "Uber", pullProbability: 0.00001 }).chanceText, "0.0010% Chance");
 assert.equal(generator.getRarityDetails({ tier: "Uber", pullProbability: 0.00000001 }).chanceText, "0.0000010% Chance");
@@ -174,7 +194,7 @@ assert.equal(zapdosRarity.label, "Rare");
 assert.equal(zapdosRarity.chanceText, "0.43% Chance");
 assert.equal(generator.getRarityDetails({ id: "volcarona", tier: "OU", pullProbability: 1 / 6 }).displayText, "Common · 16.67% Chance");
 assert.equal(generator.getRarityDetails({ id: "xerneas", tier: "Uber", sourceTier: "AG", pullProbability: 1 / 296 }).displayText, "Rare · 0.34% Chance");
-assert.equal(generator.getRarityDetails({ id: "zaciancrowned", tier: "Uber", pullProbability: 1 / 84 }).label, "Common");
+assert.equal(generator.getRarityDetails({ id: "zaciancrowned", tier: "Uber", pullProbability: 1 / 84 }).label, "Uncommon");
 
 // Render the reported examples using the real card renderer, not a copy of it.
 for (let index = 0; index < 3; index++) {
@@ -370,13 +390,13 @@ for (const id of ["mewtwo", "zacian", "dragapult", "koraidon"]) {
     const pulled = modes.map(mode => forceFirstPokemon(pool, id, mode));
     for (let i = 1; i < pulled.length; i++) {
         assert.ok(pulled[i].pullProbability > pulled[i - 1].pullProbability);
-        const rarityOrder = ["Common", "Rare", "Very Rare", "Ultra Rare"];
+        const rarityOrder = ["Common", "Uncommon", "Rare", "Very Rare", "Ultra Rare"];
         assert.ok(rarityOrder.indexOf(generator.getRarityDetails(pulled[i]).label) <= rarityOrder.indexOf(generator.getRarityDetails(pulled[i - 1]).label));
     }
 }
 const visualScale = modes.map(mode => generator.getRarityDetails(forceFirstPokemon(generator.datasets.gen1, "mewtwo", mode)));
 assert.equal(visualScale[0].label, "Rare");
-assert.equal(visualScale.at(-1).label, "Common");
+assert.equal(visualScale.at(-1).label, "Uncommon");
 assert.notEqual(visualScale[0].className, visualScale.at(-1).className);
 
 // Type filtering uses each exact form's modern typing, including either dual type.
@@ -469,7 +489,7 @@ const weightedUberTotal = bananza.filter(pokemon => pokemon.tier === "Uber")
     .reduce((sum, pokemon) => sum + generator.getPokemonPullWeight(pokemon), 0);
 const forcedTeam = generator.generateTeam(bananza, "Uber", "++");
 assert.equal(forcedTeam[0].sourceTier, "AG");
-assert.ok(Math.abs(forcedTeam[0].pullProbability - 0.07 * 0.10 / weightedUberTotal) < 1e-12);
+assert.ok(Math.abs(forcedTeam[0].pullProbability - 0.0701 * 0.10 / weightedUberTotal) < 1e-12);
 assert.equal(new Set(forcedTeam.map(pokemon => pokemon.id)).size, 6);
 seededMath.random = random;
 
@@ -505,6 +525,24 @@ if (process.argv.includes("--simulate")) {
         percentages,
         teamsWithUberPercentage: result.teamsWithUberPercentage
     }, null, 2));
+}
+
+if (process.argv.includes("--simulate-bananza")) {
+    element("pool-select").value = "bananza";
+    element("type-pool-select").value = "All";
+    element("bananza-count-select").value = "6";
+    for (const mode of modes) {
+        element("odds-select").value = mode;
+        const result = generator.simulateTeams(100000);
+        assert.equal(result.totalPokemon, 600000);
+        for (const [tier, target] of Object.entries(bananzaTargets[mode])) {
+            const observed = result.tierCounts[tier] / result.totalPokemon * 100;
+            assert.ok(Math.abs(observed - target) < .35, `${mode} ${tier}: ${observed.toFixed(2)}% vs ${target}%`);
+        }
+        for (const tier of ["ZU","PU","NU"]) assert.equal(result.tierCounts[tier], 0);
+        console.log(`Bananza ${mode}: ` + Object.keys(bananzaTargets[mode]).map(tier =>
+            `${tier} ${(result.tierCounts[tier] / result.totalPokemon * 100).toFixed(2)}%`).join(" / "));
+    }
 }
 
 // Exercise the full reveal lifecycle in both motion modes, including transitions
