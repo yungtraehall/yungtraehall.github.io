@@ -25,10 +25,10 @@ standard profile above.
 
 | Bananza tier | -- | - | = | + | ++ |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Uber | 1.03% | 1.50% | 2.47% | 4.53% | 7.01% |
-| OU | 6.47% | 10.76% | 20.01% | 30.00% | 38.82% |
-| UU | 20.51% | 24.05% | 26.52% | 34.45% | 37.20% |
-| RU | 71.99% | 63.69% | 51.00% | 31.02% | 16.97% |
+| Uber | 1.03% | 1.50% | 2.65% | 4.53% | 7.01% |
+| OU | 6.47% | 10.76% | 14.75% | 30.00% | 38.82% |
+| UU | 20.51% | 24.05% | 29.52% | 34.45% | 37.20% |
+| RU | 71.99% | 63.69% | 53.08% | 31.02% | 16.97% |
 | NU/PU/ZU | 0% | 0% | 0% | 0% | 0% |
 
 Lower maximum tiers remove stronger tier weights and normalize the remaining weights. A tier absent from the pool folds into the nearest weaker tier, or the nearest stronger tier if none exists below it. This preserves the previous handling of historical and Champions pools. A tier exhausted by selecting its last member rebalances among remaining tiers. Teams still contain six distinct Pokemon/forms.
