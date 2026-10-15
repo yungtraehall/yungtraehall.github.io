@@ -45,9 +45,9 @@ const tierOddsProfiles = {
 // the absent NU/PU/ZU tiers do not silently add their shares to RU.
 const bananzaOddsProfiles = {
     "--": { ZU: 0, PU: 0, NU: 0, RU: 71.99, UU: 20.51, OU: 6.47, Uber: 1.03 },
-    "-":  { ZU: 0, PU: 0, NU: 0, RU: 63.69, UU: 24.05, OU: 10.76, Uber: 1.50 },
-    "=":  { ZU: 0, PU: 0, NU: 0, RU: 53.08, UU: 29.52, OU: 14.75, Uber: 2.65 },
-    "+":  { ZU: 0, PU: 0, NU: 0, RU: 31.02, UU: 34.45, OU: 30.00, Uber: 4.53 },
+    "-":  { ZU: 0, PU: 0, NU: 0, RU: 67.40, UU: 25.10, OU: 6.00, Uber: 1.50 },
+    "=":  { ZU: 0, PU: 0, NU: 0, RU: 57.83, UU: 29.52, OU: 10.00, Uber: 2.65 },
+    "+":  { ZU: 0, PU: 0, NU: 0, RU: 31.02, UU: 35.98, OU: 28.00, Uber: 5.00 },
     "++": { ZU: 0, PU: 0, NU: 0, RU: 16.97, UU: 37.20, OU: 38.82, Uber: 7.01 }
 };
 const bananzaPoolMembers = new WeakSet(BANANZA_POKEMON);

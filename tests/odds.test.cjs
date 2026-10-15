@@ -94,9 +94,9 @@ for (const profile of Object.values(generator.tierOddsProfiles)) {
 }
 const bananzaTargets = {
     "--": {Uber:1.03, OU:6.47, UU:20.51, RU:71.99},
-    "-":  {Uber:1.50, OU:10.76, UU:24.05, RU:63.69},
-    "=":  {Uber:2.65, OU:14.75, UU:29.52, RU:53.08},
-    "+":  {Uber:4.53, OU:30.00, UU:34.45, RU:31.02},
+    "-":  {Uber:1.50, OU:6.00, UU:25.10, RU:67.40},
+    "=":  {Uber:2.65, OU:10.00, UU:29.52, RU:57.83},
+    "+":  {Uber:5.00, OU:28.00, UU:35.98, RU:31.02},
     "++": {Uber:7.01, OU:38.82, UU:37.20, RU:16.97}
 };
 for (const [mode, targets] of Object.entries(bananzaTargets)) {
@@ -384,14 +384,19 @@ for (const id of ["kyurem", "zacian"]) {
     assert.equal(generator.getRarityDetails(revised).probability, revised.pullProbability);
 }
 console.log("Mewtwo actual slot percentages (Gen 1 / National Dex / Bananza, Uber++):", mewtwoChances.map(p => (p * 100).toFixed(6) + "%").join(" / "));
-// Ordinary, featured OU/Uber, and AG probabilities all respond to Odds.
+// Ordinary, featured OU/Uber, and AG probabilities follow their tier weights.
+// Bananza OU dips from -- to - under the requested profile.
 for (const id of ["mewtwo", "zacian", "dragapult", "koraidon"]) {
     const pool = generator.datasets.bananza;
     const pulled = modes.map(mode => forceFirstPokemon(pool, id, mode));
+    const tier = id === "dragapult" ? "OU" : "Uber";
     for (let i = 1; i < pulled.length; i++) {
-        assert.ok(pulled[i].pullProbability > pulled[i - 1].pullProbability);
+        const direction = Math.sign(generator.bananzaOddsProfiles[modes[i]][tier] - generator.bananzaOddsProfiles[modes[i - 1]][tier]);
+        assert.ok((pulled[i].pullProbability - pulled[i - 1].pullProbability) * direction > 0);
         const rarityOrder = ["Common", "Uncommon", "Rare", "Very Rare", "Ultra Rare"];
-        assert.ok(rarityOrder.indexOf(generator.getRarityDetails(pulled[i]).label) <= rarityOrder.indexOf(generator.getRarityDetails(pulled[i - 1]).label));
+        const currentRarity = rarityOrder.indexOf(generator.getRarityDetails(pulled[i]).label);
+        const previousRarity = rarityOrder.indexOf(generator.getRarityDetails(pulled[i - 1]).label);
+        assert.ok((currentRarity - previousRarity) * direction <= 0);
     }
 }
 const visualScale = modes.map(mode => generator.getRarityDetails(forceFirstPokemon(generator.datasets.gen1, "mewtwo", mode)));
