@@ -1584,6 +1584,51 @@ body.reveal-active {
 }
 
 #type-pool-setting[hidden] { display: none; }
+#type-pool-setting { position: relative; }
+#type-pool-setting .setting-label { font-weight: bold; margin-bottom: 8px; color: #eef1f4; }
+.type-pool-picker { position: relative; min-width: 180px; }
+.type-pool-picker summary {
+    box-sizing: border-box;
+    padding: 10px 12px;
+    min-height: 42px;
+    border: 1px solid #4b515b;
+    border-radius: 8px;
+    background: #24282e;
+    color: #f5f7f9;
+    cursor: pointer;
+}
+.type-pool-picker summary:focus-visible { outline: 2px solid rgba(84,139,255,.65); outline-offset: 2px; }
+.type-pool-options {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 3px;
+    width: 280px;
+    max-width: min(280px, calc(100vw - 40px));
+    max-height: 290px;
+    padding: 8px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    border: 1px solid #586170;
+    border-radius: 8px;
+    background: #24282e;
+    box-shadow: 0 10px 25px rgba(0,0,0,.4);
+}
+#type-pool-setting .type-pool-options label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 7px 5px;
+    font-size: 14px;
+    font-weight: normal;
+    color: #f5f7f9;
+    cursor: pointer;
+}
+.type-pool-options input { accent-color: #6c9dff; }
 #type-pool-note { color: #bdcbe3; font-size: 12px; line-height: 1.4; max-width: 260px; }
 
 /* One-shot reveal accents: the orb clips the background effects itself. */

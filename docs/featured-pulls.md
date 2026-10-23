@@ -125,11 +125,13 @@ redistribute individual chances within each tier.
 
 ## Bananza type pools
 
-Bananza has All types plus the 18 standard types. Each exact form is matched
-against the cached modern species typing; either type of a dual-type Pokémon
-qualifies. Type filtering applies to the generator, console simulations, and the
-draw-slot probability calculation. The result details retain the selected type even
-if the dropdown later changes. Other pools ignore the hidden type selection.
+Bananza has an All types checkbox plus the 18 standard types. Checking individual
+types clears All types, while choosing All types clears individual selections; if
+every box is unchecked, All types returns as the default. A Pokémon qualifies if
+either of its cached modern types matches any checked type. Dual-type forms appear
+only once. Type filtering applies to generation, console simulations, and the
+draw-slot probability calculation. Result details retain the selected types even
+if the checkboxes later change. Other pools ignore the hidden type selection.
 Bananza also offers a 1–6 Pokémon count (default six). Only that many distinct
 Pokémon are drawn and displayed; card reveal and console simulations use the
 same count. Every other pool always generates six, even if Bananza was last set

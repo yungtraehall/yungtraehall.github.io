@@ -308,6 +308,9 @@ let revealReverbBuffer = null;
 const activeRevealAudios = new Set();
 let revealAudioToken = 0;
 const typePoolSelect = document.getElementById("type-pool-select");
+const typePoolSummary = document.getElementById("type-pool-summary");
+const typePoolCheckboxes = Array.from(typePoolSelect.querySelectorAll('input[type="checkbox"]'));
+const allTypesCheckbox = typePoolCheckboxes.find(checkbox => checkbox.value === "All");
 const typePoolSetting = document.getElementById("type-pool-setting");
 const typePoolNote = document.getElementById("type-pool-note");
 const bananzaCountSetting = document.getElementById("bananza-count-setting");
@@ -333,7 +336,7 @@ poolSelect.addEventListener(
     updateTierAvailability
 );
 
-typePoolSelect.addEventListener("change", updateTierAvailability);
+typePoolSelect.addEventListener("change", handleTypeSelectionChange);
 bananzaCountSelect.addEventListener("change", updateTierAvailability);
 updateTierAvailability();
 
@@ -349,10 +352,31 @@ updateTierAvailability();
     selected, move to the nearest stronger valid ceiling.
 */
 
-function getActivePokemonPool(poolName, selectedType = "All") {
+function getSelectedTypes() {
+    const selected = typePoolCheckboxes.filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+    return selected.length === 0 || selected.includes("All") ? ["All"] : selected;
+}
+
+function handleTypeSelectionChange(event) {
+    if (event.target.type !== "checkbox") return;
+    if (event.target === allTypesCheckbox && allTypesCheckbox.checked) {
+        typePoolCheckboxes.forEach(checkbox => {
+            if (checkbox !== allTypesCheckbox) checkbox.checked = false;
+        });
+    } else if (event.target.checked) {
+        allTypesCheckbox.checked = false;
+    }
+    if (!typePoolCheckboxes.some(checkbox => checkbox.checked)) allTypesCheckbox.checked = true;
+    updateTierAvailability();
+}
+
+function getActivePokemonPool(poolName, selectedTypes = ["All"]) {
     const pool = datasets[poolName] || [];
-    if (poolName !== "bananza" || selectedType === "All") return pool;
-    return pool.filter(pokemon => POKEMON_DETAILS_DATA[pokemon.id]?.modern.types.includes(selectedType));
+    const types = Array.isArray(selectedTypes) ? selectedTypes : [selectedTypes];
+    if (poolName !== "bananza" || types.length === 0 || types.includes("All")) return pool;
+    return pool.filter(pokemon =>
+        types.some(type => POKEMON_DETAILS_DATA[pokemon.id]?.modern.types.includes(type))
+    );
 }
 
 function getSelectedTeamSize() {
@@ -366,9 +390,11 @@ function updateTierAvailability() {
     const isBananza = poolSelect.value === "bananza";
     typePoolSetting.hidden = !isBananza;
     bananzaCountSetting.hidden = !isBananza;
-    const selectedType = isBananza ? (typePoolSelect.value || "All") : "All";
-    const pokemonPool = getActivePokemonPool(poolSelect.value, selectedType);
-    typePoolNote.textContent = pokemonPool.length + " Pokémon available. Dual-type Pokémon match either type.";
+    const selectedTypes = isBananza ? getSelectedTypes() : ["All"];
+    const pokemonPool = getActivePokemonPool(poolSelect.value, selectedTypes);
+    typePoolSummary.textContent = selectedTypes[0] === "All" ? "All types"
+        : selectedTypes.length <= 2 ? selectedTypes.join(", ") : selectedTypes.length + " types selected";
+    typePoolNote.textContent = pokemonPool.length + " Pokémon available. Matches any selected type; dual-type Pokémon appear once.";
     if (!revealInProgress) generateButton.disabled = pokemonPool.length < getSelectedTeamSize();
 
     // Champions OU is an OU-only pool, even if Uber was selected before.
@@ -476,8 +502,8 @@ async function generatePokemon() {
     const selectedPool =
         poolSelect.value;
 
-    const selectedType = selectedPool === "bananza" ? (typePoolSelect.value || "All") : "All";
-    const pokemonPool = getActivePokemonPool(selectedPool, selectedType);
+    const selectedTypes = selectedPool === "bananza" ? getSelectedTypes() : ["All"];
+    const pokemonPool = getActivePokemonPool(selectedPool, selectedTypes);
 
     const selectedTier = selectedPool === "bananza" ? "Uber" : tierSelect.value;
 
@@ -509,7 +535,11 @@ async function generatePokemon() {
         That tier decides the reveal color.
     */
 
-    generatedPokemon.forEach(pokemon => { pokemon.selectedPool = selectedPool; pokemon.selectedType = selectedType; });
+    generatedPokemon.forEach(pokemon => {
+        pokemon.selectedPool = selectedPool;
+        pokemon.selectedTypes = [...selectedTypes];
+        pokemon.selectedType = selectedTypes.join(", ");
+    });
 
     const highestTier =
         getHighestTier(generatedPokemon);
@@ -2262,8 +2292,8 @@ function simulateTeams(numberOfTeams = 10000) {
 
     const teamSize = getSelectedTeamSize();
 
-    const selectedType = selectedPool === "bananza" ? (typePoolSelect.value || "All") : "All";
-    const pokemonPool = getActivePokemonPool(selectedPool, selectedType);
+    const selectedTypes = selectedPool === "bananza" ? getSelectedTypes() : ["All"];
+    const pokemonPool = getActivePokemonPool(selectedPool, selectedTypes);
 
 
     const tierCounts = {
@@ -2361,7 +2391,8 @@ function simulateTeams(numberOfTeams = 10000) {
         numberOfTeams,
         totalPokemon,
         selectedPool,
-        selectedType,
+        selectedType: selectedTypes.join(", "),
+        selectedTypes,
         selectedTier,
         selectedOdds,
         teamSize,

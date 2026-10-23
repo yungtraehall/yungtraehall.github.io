@@ -12,6 +12,12 @@ assert.match(revealStyles, /\.reveal-type-overlay\s*\{[^}]*z-index:\s*4;[^}]*bor
 assert.doesNotMatch(revealMarkup, /reveal-type-sigil/);
 assert.match(revealStyles, /\.reveal-overlay\.rare-reveal\.pokemon-revealed \.reveal-type-text \{ animation: type-text-fade 1\.9s/);
 const tiers = ["ZU", "PU", "NU", "RU", "UU", "OU", "Uber"];
+const types = ["Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying", "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water"];
+const typeCheckboxes = ["All", ...types].map(value => ({ type: "checkbox", value, checked: value === "All" }));
+assert.match(revealMarkup, /<details id="type-pool-select" class="type-pool-picker">/);
+for (const type of ["All", ...types]) {
+    assert.ok(revealMarkup.includes(`type="checkbox" value="${type}"`));
+}
 const elements = new Map();
 const cards = [];
 
@@ -32,6 +38,7 @@ function element(id) {
 }
 
 element("pool-select").value = "gen9";
+element("type-pool-select").querySelectorAll = () => typeCheckboxes;
 element("bananza-count-select").value = "6";
 element("tier-select").value = "Uber";
 element("tier-select").options = tiers.map(value => ({ value, disabled: false }));
@@ -74,7 +81,7 @@ vm.runInContext(fs.readFileSync(path.join(root, "js/script.js"), "utf8"), contex
 vm.runInContext(`globalThis.generator = {
     datasets, tierOddsProfiles, bananzaOddsProfiles,
     generateTeam, getSelectedTeamSize, getTierSelectionData, getPokemonPullWeight,
-    simulateTeams, updateTierAvailability, getRarityCategory, getRarityDetails, getSpecialPresentation, getRevealTypes, getRevealUsageDetails, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
+    simulateTeams, updateTierAvailability, getSelectedTypes, handleTypeSelectionChange, getRarityCategory, getRarityDetails, getSpecialPresentation, getRevealTypes, getRevealUsageDetails, getPreviewPokemon, getActivePokemonPool, shouldPlayRevealAudio, FEATURED_RARE_UBERS, renderTeam, getPokemonSpriteUrls, getFinalToneDelay, RARE_OU_POKEMON
 };`, context);
 const generator = context.generator;
 // Every eligible form in every pool has a verified Showdown MP3 mapping.
@@ -405,7 +412,6 @@ assert.equal(visualScale.at(-1).label, "Uncommon");
 assert.notEqual(visualScale[0].className, visualScale.at(-1).className);
 
 // Type filtering uses each exact form's modern typing, including either dual type.
-const types = ["Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying", "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water"];
 vm.runInContext('globalThis.details = POKEMON_DETAILS_DATA;', context);
 for (const type of types) {
     const pool = generator.getActivePokemonPool("bananza", type);
@@ -425,7 +431,42 @@ assert.ok(!generator.getActivePokemonPool("bananza", "Steel").some(p => p.id ===
 assert.ok(generator.getActivePokemonPool("bananza", "Psychic").some(p => p.id === "mewtwo"));
 assert.equal(generator.getActivePokemonPool("gen9", "Bug"), generator.datasets.gen9);
 element("pool-select").value = "bananza";
-element("type-pool-select").value = "Bug";
+const bugCheckbox = typeCheckboxes.find(box => box.value === "Bug");
+const fireCheckbox = typeCheckboxes.find(box => box.value === "Fire");
+const allCheckbox = typeCheckboxes[0];
+bugCheckbox.checked = true;
+generator.handleTypeSelectionChange({target:bugCheckbox});
+assert.equal(allCheckbox.checked, false);
+assert.equal(element("type-pool-summary").textContent, "Bug");
+fireCheckbox.checked = true;
+generator.handleTypeSelectionChange({target:fireCheckbox});
+assert.equal(element("type-pool-summary").textContent, "Bug, Fire");
+assert.equal(Array.from(generator.getSelectedTypes()).join(","), "Bug,Fire");
+const combinedPool = generator.getActivePokemonPool("bananza", generator.getSelectedTypes());
+const bugPool = generator.getActivePokemonPool("bananza", "Bug");
+const firePool = generator.getActivePokemonPool("bananza", "Fire");
+assert.equal(combinedPool.length, new Set([...bugPool, ...firePool]).size);
+assert.ok(combinedPool.length > bugPool.length && combinedPool.length > firePool.length);
+assert.equal(combinedPool.filter(p => p.id === "volcarona").length, 1);
+assert.ok(combinedPool.every(p => context.details[p.id].modern.types.some(type => ["Bug", "Fire"].includes(type))));
+const multiTeam = generator.generateTeam(combinedPool, "Uber", "=", 6);
+verifySlotProbabilities(multiTeam, combinedPool, "Uber", "=");
+bugCheckbox.checked = false;
+generator.handleTypeSelectionChange({target:bugCheckbox});
+assert.equal(element("type-pool-summary").textContent, "Fire");
+fireCheckbox.checked = false;
+generator.handleTypeSelectionChange({target:fireCheckbox});
+assert.equal(allCheckbox.checked, true);
+assert.equal(element("type-pool-summary").textContent, "All types");
+bugCheckbox.checked = true;
+generator.handleTypeSelectionChange({target:bugCheckbox});
+allCheckbox.checked = true;
+generator.handleTypeSelectionChange({target:allCheckbox});
+assert.equal(bugCheckbox.checked, false);
+assert.equal(generator.getActivePokemonPool("bananza", generator.getSelectedTypes()).length, generator.datasets.bananza.length);
+element("pool-select").value = "bananza";
+bugCheckbox.checked = true;
+generator.handleTypeSelectionChange({target:bugCheckbox});
 generator.updateTierAvailability();
 assert.equal(element("type-pool-setting").hidden, false);
 assert.equal(element("bananza-count-setting").hidden, false);
@@ -451,7 +492,16 @@ vm.runInContext('const originalGenerateForTypeTest = generateTeam; generateTeam 
 const typeSimulation = generator.simulateTeams(10);
 vm.runInContext('generateTeam = originalGenerateForTypeTest;', context);
 assert.equal(typeSimulation.selectedType, "Bug");
+assert.equal(Array.from(typeSimulation.selectedTypes).join(","), "Bug");
 assert.equal(typeSimulation.totalPokemon, 60);
+fireCheckbox.checked = true;
+generator.handleTypeSelectionChange({target:fireCheckbox});
+context.checkSimulationPool = pool => assert.ok(pool.some(p => context.details[p.id].modern.types.includes("Fire")) && pool.some(p => context.details[p.id].modern.types.includes("Bug")));
+vm.runInContext('generateTeam = (...args) => { checkSimulationPool(args[0]); return originalGenerateForTypeTest(...args); }; globalThis.generator.simulateTeams = simulateTeams;', context);
+const multiSimulation = generator.simulateTeams(10);
+vm.runInContext('generateTeam = originalGenerateForTypeTest;', context);
+assert.equal(Array.from(multiSimulation.selectedTypes).join(","), "Bug,Fire");
+assert.equal(multiSimulation.selectedType, "Bug, Fire");
 element("pool-select").value = "gen9";
 generator.updateTierAvailability();
 assert.equal(element("type-pool-setting").hidden, true);
@@ -534,7 +584,8 @@ if (process.argv.includes("--simulate")) {
 
 if (process.argv.includes("--simulate-bananza")) {
     element("pool-select").value = "bananza";
-    element("type-pool-select").value = "All";
+    allCheckbox.checked = true;
+    generator.handleTypeSelectionChange({target:allCheckbox});
     element("bananza-count-select").value = "6";
     for (const mode of modes) {
         element("odds-select").value = mode;
