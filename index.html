@@ -56,28 +56,31 @@
             </div>
 
             <div class="setting" id="type-pool-setting" hidden>
-                <label for="type-pool-select">Bananza Type</label>
-                <select id="type-pool-select">
-                    <option value="All">All types</option>
-                    <option value="Bug">Bug</option>
-                    <option value="Dark">Dark</option>
-                    <option value="Dragon">Dragon</option>
-                    <option value="Electric">Electric</option>
-                    <option value="Fairy">Fairy</option>
-                    <option value="Fighting">Fighting</option>
-                    <option value="Fire">Fire</option>
-                    <option value="Flying">Flying</option>
-                    <option value="Ghost">Ghost</option>
-                    <option value="Grass">Grass</option>
-                    <option value="Ground">Ground</option>
-                    <option value="Ice">Ice</option>
-                    <option value="Normal">Normal</option>
-                    <option value="Poison">Poison</option>
-                    <option value="Psychic">Psychic</option>
-                    <option value="Rock">Rock</option>
-                    <option value="Steel">Steel</option>
-                    <option value="Water">Water</option>
-                </select>
+                <span class="setting-label" id="type-pool-label">Bananza Types</span>
+                <details id="type-pool-select" class="type-pool-picker">
+                    <summary id="type-pool-summary">All types</summary>
+                    <div class="type-pool-options" role="group" aria-labelledby="type-pool-label">
+                        <label><input type="checkbox" value="All" checked> All types</label>
+                        <label><input type="checkbox" value="Bug"> Bug</label>
+                        <label><input type="checkbox" value="Dark"> Dark</label>
+                        <label><input type="checkbox" value="Dragon"> Dragon</label>
+                        <label><input type="checkbox" value="Electric"> Electric</label>
+                        <label><input type="checkbox" value="Fairy"> Fairy</label>
+                        <label><input type="checkbox" value="Fighting"> Fighting</label>
+                        <label><input type="checkbox" value="Fire"> Fire</label>
+                        <label><input type="checkbox" value="Flying"> Flying</label>
+                        <label><input type="checkbox" value="Ghost"> Ghost</label>
+                        <label><input type="checkbox" value="Grass"> Grass</label>
+                        <label><input type="checkbox" value="Ground"> Ground</label>
+                        <label><input type="checkbox" value="Ice"> Ice</label>
+                        <label><input type="checkbox" value="Normal"> Normal</label>
+                        <label><input type="checkbox" value="Poison"> Poison</label>
+                        <label><input type="checkbox" value="Psychic"> Psychic</label>
+                        <label><input type="checkbox" value="Rock"> Rock</label>
+                        <label><input type="checkbox" value="Steel"> Steel</label>
+                        <label><input type="checkbox" value="Water"> Water</label>
+                    </div>
+                </details>
                 <small id="type-pool-note" aria-live="polite"></small>
             </div>
 
